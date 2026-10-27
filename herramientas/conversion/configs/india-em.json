@@ -1,0 +1,4 @@
+{"name": "india-catalina-em", "mode": "direct", "prefab": "${EM}/Custom/Models/piso 10 - India/Nueva india/India.prefab",
+ "direct_sources": ["${EM}/Custom/Models/piso 10 - India/Nueva india/IndiaCatalina_Animation.fbx"],
+ "asset_roots": ["${EM}/Custom"], "aux_max": 2048, "out_dir": "${OUT}", "work_dir": "${WORK}", "size": {"height": 1.75}, "fps": 30, "frame_range": [1, 241],
+ "texture_search": ["${EM}/Custom/Models/piso 10 - India/Nueva india/Texturas"]}

@@ -1,0 +1,3 @@
+{"name": "india-catalina-ic", "mode": "prefab", "prefab": "${IC}/Custom/Prefabs/Modified 2/IndiaCatalina.prefab", "root_go": "IndiaCatalina",
+ "asset_roots": ["${IC}"], "out_dir": "${OUT}", "work_dir": "${WORK}", "size": {"height": 3.2}, "measure_frame": 1,
+ "name_map": {"TiaraAnimada": "Tiara"}, "texture_search": ["${IC}/Custom/Textures/IndiaNueva", "${IC}/Custom/Textures/IndiaCatalina"], "bake": {"timeline": "${IC}/Custom/TimeLine/IndiaCatalinaTimeline.playable", "end": 11.083}}

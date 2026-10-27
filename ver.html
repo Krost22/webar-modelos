@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Visor AR</title>
+  <meta name="description" content="Modelo 3D en realidad aumentada">
+  <link rel="stylesheet" href="assets/estilos.css">
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body class="visor">
+  <header class="barra">
+    <a class="volver" href="index.html" aria-label="Volver a la galería">← Modelos</a>
+    <div class="titulo">
+      <h1 id="titulo">Cargando…</h1>
+      <span id="subtitulo"></span>
+    </div>
+    <button class="btn" id="btnQr" type="button" aria-label="Mostrar código QR">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h3v-3"/></svg>
+      QR
+    </button>
+  </header>
+
+  <main class="escenario">
+    <model-viewer id="mv" camera-controls touch-action="pan-y" autoplay
+      ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor"
+      shadow-intensity="1" shadow-softness="0.9" exposure="1.05" environment-image="neutral"
+      interaction-prompt="auto" loading="eager" alt="">
+      <button slot="ar-button" class="btn-ar" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg>
+        Ver en tu espacio (AR)
+      </button>
+      <div slot="progress-bar" class="progreso"><div id="barra"></div></div>
+    </model-viewer>
+    <div class="aviso-qr" id="avisoQr" hidden>
+      <div class="qr" id="avisoQrCodigo"></div>
+      Escanéalo con tu celular para verlo en realidad aumentada.
+    </div>
+  </main>
+
+  <section class="panel">
+    <p id="descripcion"></p>
+    <div class="controles">
+      <button class="btn btn-mar" id="btnNarracion" type="button" hidden>▶ Escuchar historia</button>
+      <span class="idiomas" id="idiomas"></span>
+      <button class="btn" id="btnMusica" type="button" aria-pressed="false" hidden>♪ Música</button>
+      <button class="btn" id="btnPausa" type="button" hidden>⏸ Pausar animación</button>
+      <span class="tiempo" id="tiempo"></span>
+    </div>
+  </section>
+
+  <dialog class="modal" id="modalQr">
+    <h2 id="modalTitulo">Código QR</h2>
+    <p>Escanéalo con la cámara del celular para abrir este modelo y verlo en AR.</p>
+    <div class="qr" id="modalCodigo"></div>
+    <div class="url" id="modalUrl"></div>
+    <div class="fila">
+      <button class="btn" id="btnDescargarQr" type="button">Descargar PNG</button>
+      <button class="btn btn-primario" id="btnCerrarQr" type="button">Cerrar</button>
+    </div>
+  </dialog>
+
+  <script type="module">
+    import { MODELOS, IDIOMAS, buscarModelo } from './assets/modelos.js';
+    import { qrSvg, descargarQrPng, esDireccionLocal } from './assets/qr.js';
+
+    const params = new URLSearchParams(location.search);
+    const modelo = buscarModelo(params.get('m')) || MODELOS[0];
+    const mv = document.getElementById('mv');
+    const $ = (id) => document.getElementById(id);
+
+    // --- Datos del modelo ---
+    document.title = `${modelo.nombre} · Visor AR`;
+    $('titulo').textContent = modelo.nombre;
+    $('subtitulo').textContent = `${modelo.variante} · ${modelo.origen}`;
+    $('descripcion').textContent = modelo.descripcion;
+    mv.alt = `${modelo.nombre} – ${modelo.variante}`;
+    mv.poster = modelo.poster;
+    if (modelo.camara) mv.cameraOrbit = modelo.camara;
+    if (modelo.usdz) mv.iosSrc = modelo.usdz;
+    mv.src = modelo.glb;
+
+    mv.addEventListener('progress', (e) => {
+      $('barra').style.width = `${Math.round(e.detail.totalProgress * 100)}%`;
+      if (e.detail.totalProgress >= 1) setTimeout(() => ($('barra').style.width = '0'), 400);
+    });
+
+    // --- QR de esta página ---
+    const urlPagina = new URL(`ver.html?m=${modelo.id}`, location.href).href;
+    const ponerQr = (el) => (el.innerHTML = qrSvg(urlPagina, modelo.nombre));
+    $('btnQr').addEventListener('click', () => {
+      $('modalTitulo').textContent = `${modelo.nombre} – ${modelo.variante}`;
+      ponerQr($('modalCodigo'));
+      $('modalUrl').textContent = urlPagina + (esDireccionLocal() ? '  (dirección local: publica el sitio para que el QR funcione en otros celulares)' : '');
+      $('modalQr').showModal();
+    });
+    $('btnCerrarQr').addEventListener('click', () => $('modalQr').close());
+    $('btnDescargarQr').addEventListener('click', () => descargarQrPng(urlPagina, `qr-${modelo.id}.png`));
+
+    // En escritorio (sin AR) se muestra el QR en una esquina.
+    mv.addEventListener('load', () => {
+      if (!mv.canActivateAR && matchMedia('(min-width: 761px)').matches) {
+        ponerQr($('avisoQrCodigo'));
+        $('avisoQr').hidden = false;
+      }
+      if (mv.availableAnimations.length) {
+        mv.animationName = mv.availableAnimations[0];
+        mv.play();
+        $('btnPausa').hidden = false;
+      }
+    });
+
+    // --- Bucle de un tramo de la animación (intro + bucle) ---
+    function vigilarBucle() {
+      const b = modelo.bucle;
+      if (b && mv.loaded && !mv.paused && mv.currentTime >= b.fin - 1 / 30) {
+        mv.currentTime = b.inicio + Math.max(0, mv.currentTime - b.fin);
+      }
+      requestAnimationFrame(vigilarBucle);
+    }
+    requestAnimationFrame(vigilarBucle);
+
+    $('btnPausa').addEventListener('click', () => {
+      if (mv.paused) { mv.play(); $('btnPausa').textContent = '⏸ Pausar animación'; }
+      else { mv.pause(); $('btnPausa').textContent = '▶ Reanudar animación'; }
+    });
+
+    // --- Narración, efectos y música ---
+    const narracion = new Audio();
+    narracion.preload = 'none';
+    let idioma = Object.keys(modelo.narracion || {})[0];
+    const ambiente = modelo.ambiente ? Object.assign(new Audio(modelo.ambiente), { loop: true, volume: 0.35 }) : null;
+    const eventos = (modelo.eventos || []).map((e) => ({ ...e, audio: new Audio(e.audio), hecho: false }));
+    let retraso = null;
+    let sonando = false;
+
+    function detenerNarracion() {
+      sonando = false;
+      clearTimeout(retraso);
+      narracion.pause();
+      ambiente?.pause();
+      eventos.forEach((e) => { e.audio.pause(); e.hecho = false; });
+      $('btnNarracion').textContent = '▶ Escuchar historia';
+    }
+
+    function iniciarNarracion() {
+      clearTimeout(retraso);
+      sonando = true;
+      narracion.src = modelo.narracion[idioma];
+      narracion.currentTime = 0;
+      eventos.forEach((e) => { e.hecho = false; e.audio.currentTime = 0; });
+      if (modelo.sincronizar && mv.availableAnimations.length) {
+        mv.currentTime = 0;   // la animación arranca con la voz, como en la Timeline de Unity
+        mv.play();
+        $('btnPausa').textContent = '⏸ Pausar animación';
+      }
+      ambiente && (ambiente.currentTime = 0, ambiente.play().catch(() => {}));
+      retraso = setTimeout(() => narracion.play().catch(() => {}), (modelo.retrasoNarracion || 0) * 1000);
+      $('btnNarracion').textContent = '■ Detener historia';
+    }
+
+    if (modelo.narracion) {
+      $('btnNarracion').hidden = false;
+      $('btnNarracion').addEventListener('click', () => (sonando ? detenerNarracion() : iniciarNarracion()));
+      const langs = Object.keys(modelo.narracion);
+      if (langs.length > 1) {
+        for (const l of langs) {
+          const b = document.createElement('button');
+          b.className = 'btn';
+          b.type = 'button';
+          b.textContent = l.toUpperCase();
+          b.title = IDIOMAS[l];
+          b.setAttribute('aria-pressed', String(l === idioma));
+          b.addEventListener('click', () => {
+            idioma = l;
+            [...$('idiomas').children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+            if (sonando) iniciarNarracion();
+          });
+          $('idiomas').append(b);
+        }
+      }
+    }
+    narracion.addEventListener('timeupdate', () => {
+      const t = narracion.currentTime + (modelo.retrasoNarracion || 0);
+      for (const e of eventos) if (!e.hecho && t >= e.t) { e.hecho = true; e.audio.play().catch(() => {}); }
+      const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+      $('tiempo').textContent = narracion.duration ? `${fmt(narracion.currentTime)} / ${fmt(narracion.duration)}` : '';
+    });
+    narracion.addEventListener('ended', () => { sonando = false; ambiente?.pause(); $('btnNarracion').textContent = '▶ Escuchar historia'; $('tiempo').textContent = ''; });
+
+    if (modelo.musica) {
+      const musica = Object.assign(new Audio(modelo.musica), { loop: true, volume: 0.5, preload: 'none' });
+      $('btnMusica').hidden = false;
+      $('btnMusica').addEventListener('click', () => {
+        const on = musica.paused;
+        on ? musica.play().catch(() => {}) : musica.pause();
+        $('btnMusica').setAttribute('aria-pressed', String(on));
+      });
+    }
+  </script>
+</body>
+</html>

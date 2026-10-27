@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartagena en AR</title>
+  <meta name="description" content="Modelos 3D de Cartagena en realidad aumentada, con acceso por código QR">
+  <link rel="stylesheet" href="assets/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="contenedor">
+    <header class="cabecera">
+      <div class="marca">Cartagena · Realidad aumentada</div>
+      <h1>Modelos 3D en AR</h1>
+      <p>Toca un modelo para verlo en 3D y colocarlo en tu espacio con la cámara del celular. Cada modelo tiene su propio código QR para abrirlo directamente.</p>
+      <div class="acciones-cabecera">
+        <a class="btn btn-primario" href="comparar.html">Comparar las dos India Catalina</a>
+        <a class="btn" href="qr.html">Hoja de códigos QR</a>
+      </div>
+    </header>
+
+    <section class="seccion">
+      <h2>India Catalina: dos versiones</h2>
+      <p>La misma figura hecha en los dos proyectos. Ábrelas lado a lado para decidir cuál se ve mejor.</p>
+      <div class="rejilla" id="g-india"></div>
+    </section>
+
+    <section class="seccion">
+      <h2>Monumentos</h2>
+      <p>Del proyecto AR-IndiaCatalina, con sus animaciones y narración originales.</p>
+      <div class="rejilla" id="g-monumento"></div>
+    </section>
+
+    <section class="seccion">
+      <h2>Cultura del Caribe</h2>
+      <p>Del proyecto EM Hotels, con narración en español, inglés y portugués.</p>
+      <div class="rejilla" id="g-cultura"></div>
+    </section>
+
+    <footer class="pie-pagina">
+      AR en Android (Chrome con ARCore) y iPhone/iPad (Safari, Quick Look). En computador se ve en 3D y muestra el QR para abrirlo en el celular.
+    </footer>
+  </div>
+
+  <dialog class="modal" id="modalQr">
+    <h2 id="modalTitulo"></h2>
+    <p>Escanéalo con la cámara del celular.</p>
+    <div class="qr" id="modalCodigo"></div>
+    <div class="url" id="modalUrl"></div>
+    <div class="fila">
+      <button class="btn" id="btnDescargarQr" type="button">Descargar PNG</button>
+      <button class="btn btn-primario" id="btnCerrarQr" type="button">Cerrar</button>
+    </div>
+  </dialog>
+
+  <script type="module">
+    import { MODELOS } from './assets/modelos.js';
+    import { qrSvg, descargarQrPng } from './assets/qr.js';
+
+    const $ = (id) => document.getElementById(id);
+    let actual = null;
+
+    for (const m of MODELOS) {
+      const url = `ver.html?m=${m.id}`;
+      const art = document.createElement('article');
+      art.className = 'tarjeta';
+      art.innerHTML = `
+        <a class="imagen" href="${url}"><img src="${m.poster}" alt="${m.nombre} – ${m.variante}" loading="lazy"></a>
+        <div class="cuerpo">
+          <span class="chip ${m.origen.startsWith('AR-IndiaCatalina') ? '' : 'ocre'}">${m.origen}</span>
+          <h3>${m.nombre}</h3>
+          <div class="variante">${m.variante}</div>
+          <div class="pie">
+            <a class="btn btn-primario" href="${url}">Ver en 3D / AR</a>
+            <button class="btn" type="button" data-qr="${m.id}">QR</button>
+          </div>
+        </div>`;
+      $(`g-${m.grupo}`).append(art);
+    }
+
+    document.addEventListener('click', (e) => {
+      const id = e.target.closest('[data-qr]')?.dataset.qr;
+      if (!id) return;
+      const m = MODELOS.find((x) => x.id === id);
+      actual = { url: new URL(`ver.html?m=${id}`, location.href).href, id };
+      $('modalTitulo').textContent = `${m.nombre} – ${m.variante}`;
+      $('modalCodigo').innerHTML = qrSvg(actual.url, m.nombre);
+      $('modalUrl').textContent = actual.url;
+      $('modalQr').showModal();
+    });
+    $('btnCerrarQr').addEventListener('click', () => $('modalQr').close());
+    $('btnDescargarQr').addEventListener('click', () => actual && descargarQrPng(actual.url, `qr-${actual.id}.png`));
+  </script>
+</body>
+</html>

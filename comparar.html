@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Comparar India Catalina</title>
+  <meta name="description" content="Las dos versiones de la India Catalina lado a lado">
+  <link rel="stylesheet" href="assets/estilos.css">
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+</head>
+<body class="visor">
+  <header class="barra">
+    <a class="volver" href="index.html">← Modelos</a>
+    <div class="titulo">
+      <h1>India Catalina: comparación</h1>
+      <span>Gira una y la otra la sigue. Cada una tiene su botón de AR.</span>
+    </div>
+    <button class="btn" id="btnSync" type="button" aria-pressed="true">Girar juntas</button>
+  </header>
+  <main class="comparar" id="comparar"></main>
+
+  <script type="module">
+    import { buscarModelo } from './assets/modelos.js';
+
+    const ids = ['india-catalina-em', 'india-catalina-ic'];
+    const visores = [];
+    for (const id of ids) {
+      const m = buscarModelo(id);
+      const lado = document.createElement('section');
+      lado.className = 'lado';
+      lado.innerHTML = `
+        <div class="etiqueta"><strong>${m.variante}</strong><small>${m.origen}</small></div>
+        <div class="escenario">
+          <model-viewer src="${m.glb}" ios-src="${m.usdz || ''}" poster="${m.poster}" alt="${m.nombre} – ${m.variante}"
+            camera-controls touch-action="pan-y" autoplay camera-orbit="0deg 80deg auto"
+            ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto"
+            shadow-intensity="1" exposure="1.05" environment-image="neutral" interaction-prompt="none">
+            <button slot="ar-button" class="btn-ar" type="button">Ver en AR</button>
+          </model-viewer>
+        </div>
+        <div class="ficha">
+          <dl>
+            <dt>Peso</dt><dd>${m.stats.mb} MB</dd>
+            <dt>Triángulos</dt><dd>${m.stats.tris.toLocaleString('es-CO')}</dd>
+            <dt>Texturas</dt><dd>${m.stats.texturas}</dd>
+            <dt>Animación</dt><dd>${m.stats.anim}</dd>
+          </dl>
+          <a href="ver.html?m=${m.id}">Abrir sola, con narración →</a>
+        </div>`;
+      document.getElementById('comparar').append(lado);
+      const mv = lado.querySelector('model-viewer');
+      mv.addEventListener('load', () => mv.availableAnimations.length && mv.play());
+      visores.push({ mv, m });
+    }
+
+    // Bucle intro + tramo para la versión con Timeline.
+    (function vigilar() {
+      for (const { mv, m } of visores) {
+        const b = m.bucle;
+        if (b && mv.loaded && !mv.paused && mv.currentTime >= b.fin - 1 / 30) mv.currentTime = b.inicio;
+      }
+      requestAnimationFrame(vigilar);
+    })();
+
+    // Sincroniza la cámara: al girar una, la otra copia el ángulo.
+    let sync = true;
+    const btn = document.getElementById('btnSync');
+    btn.addEventListener('click', () => { sync = !sync; btn.setAttribute('aria-pressed', String(sync)); });
+    visores.forEach(({ mv }, i) => {
+      mv.addEventListener('camera-change', (e) => {
+        if (!sync || e.detail.source !== 'user-interaction') return;
+        const o = mv.getCameraOrbit();
+        const otro = visores[1 - i].mv;
+        otro.cameraOrbit = `${o.theta}rad ${o.phi}rad auto`;
+        otro.jumpCameraToGoal();
+      });
+    });
+  </script>
+</body>
+</html>

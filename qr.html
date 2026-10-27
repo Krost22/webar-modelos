@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Códigos QR</title>
+  <meta name="description" content="Hoja imprimible con un código QR por modelo">
+  <link rel="stylesheet" href="assets/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="contenedor">
+    <header class="cabecera">
+      <div class="marca no-imprimir"><a href="index.html">← Modelos</a></div>
+      <h1>Códigos QR de los modelos</h1>
+      <p class="no-imprimir">Cada código abre su modelo en el visor AR. Imprime esta hoja o descarga cada código en PNG.</p>
+    </header>
+
+    <div class="no-imprimir">
+      <div class="alerta" id="alertaLocal" hidden>
+        Estás viendo el sitio desde una dirección local. Escribe abajo la dirección pública donde está publicado (por ejemplo, la de GitHub Pages) para que los QR funcionen en cualquier celular.
+      </div>
+      <form class="base-url" id="formBase">
+        <input id="base" type="url" placeholder="https://tu-dominio/ruta/" aria-label="Dirección pública del sitio" required>
+        <button class="btn btn-primario" type="submit">Actualizar códigos</button>
+        <button class="btn" type="button" onclick="print()">Imprimir</button>
+      </form>
+    </div>
+
+    <section class="seccion">
+      <div class="hoja" id="hoja"></div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { MODELOS } from './assets/modelos.js';
+    import { qrSvg, descargarQrPng, esDireccionLocal } from './assets/qr.js';
+
+    const $ = (id) => document.getElementById(id);
+    const guardada = new URLSearchParams(location.search).get('base');
+    const porDefecto = new URL('.', location.href).href;
+    $('base').value = guardada || porDefecto;
+    $('alertaLocal').hidden = !(esDireccionLocal() && !guardada);
+
+    const entradas = [
+      ...MODELOS.map((m) => ({ titulo: m.nombre, sub: m.variante, pagina: `ver.html?m=${m.id}`, archivo: `qr-${m.id}.png` })),
+      { titulo: 'India Catalina', sub: 'Comparar las dos versiones', pagina: 'comparar.html', archivo: 'qr-comparar-india.png' },
+      { titulo: 'Todos los modelos', sub: 'Galería', pagina: 'index.html', archivo: 'qr-galeria.png' },
+    ];
+
+    function pintar() {
+      const base = $('base').value.endsWith('/') ? $('base').value : $('base').value + '/';
+      $('hoja').innerHTML = '';
+      for (const e of entradas) {
+        const url = new URL(e.pagina, base).href;
+        const div = document.createElement('div');
+        div.className = 'codigo';
+        div.innerHTML = `<div class="qr">${qrSvg(url, e.titulo)}</div><h3>${e.titulo}</h3><small>${e.sub}</small><div class="url">${url}</div>`;
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.type = 'button';
+        b.textContent = 'Descargar PNG';
+        b.addEventListener('click', () => descargarQrPng(url, e.archivo));
+        div.append(b);
+        $('hoja').append(div);
+      }
+    }
+    $('formBase').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      history.replaceState(null, '', `?base=${encodeURIComponent($('base').value)}`);
+      $('alertaLocal').hidden = true;
+      pintar();
+    });
+    pintar();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+*.glb binary
+*.usdz binary
+*.mp3 binary
+*.webp binary
+*.png binary
+*.html text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.json text eol=lf

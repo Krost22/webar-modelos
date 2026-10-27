@@ -1,0 +1,4 @@
+{"name": "champeta-pico", "mode": "direct", "prefab": "${EM}/Custom/Models/piso18 - PickUp/Picó.prefab",
+ "direct_sources": ["${EM}/Custom/Models/piso18 - PickUp/Piso 18 .blend"],
+ "asset_roots": ["${EM}/Custom"], "out_dir": "${OUT}", "work_dir": "${WORK}", "size": {"max_dim": 2.5}, "fps": 30, "frame_range": [1, 250], "skip": "^cs_",
+ "texture_search": ["${EM}/Custom/Models/piso18 - PickUp/textures", "${EM}/Custom/Models/piso18 - PickUp/Texturas", "${EM}/Custom/Models/piso18 - PickUp/Pico.fbm"]}

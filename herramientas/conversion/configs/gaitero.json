@@ -1,0 +1,4 @@
+{"name": "gaitero", "mode": "direct", "prefab": "${EM}/Custom/Models/Piso 10-Gaitero/NUEVO/Gaitero_Animacion.prefab",
+ "direct_sources": ["${EM}/Custom/Models/Piso 10-Gaitero/NUEVO/Gaitero_Animacion.fbx"],
+ "asset_roots": ["${EM}/Custom"], "out_dir": "${OUT}", "work_dir": "${WORK}", "size": {"height": 1.75}, "fps": 24, "frame_range": [1, 66],
+ "texture_search": ["${EM}/Custom/Models/Piso 10-Gaitero/NUEVO", "${EM}/Custom/Models/Piso 10-Gaitero/Texturas"]}
