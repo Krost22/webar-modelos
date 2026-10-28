@@ -120,6 +120,23 @@ model-viewer {
   display: inline-flex; gap: 8px; align-items: center; cursor: pointer; white-space: nowrap;
 }
 .btn-ar svg { width: 20px; height: 20px; }
+a.btn-ar { text-decoration: none; }
+.controles-ar, .ayuda-ar { display: none; }
+.controles-ar {
+  position: absolute; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  gap: 8px; z-index: 5;
+}
+.controles-ar .btn { box-shadow: var(--sombra); background: rgba(255, 255, 255, .92); color: #1d1b18; border-color: transparent; }
+.controles-ar .btn-mar { background: var(--mar); color: #fff; }
+.controles-ar .btn[aria-pressed="true"] { background: #e1f0f2; color: #1f6f80; }
+.ayuda-ar {
+  position: absolute; top: max(70px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  background: rgba(0, 0, 0, .6); color: #fff; padding: 10px 14px; border-radius: 12px; font-size: 14px;
+  width: max-content; max-width: calc(100% - 32px); text-align: center;
+}
+model-viewer[ar-status="session-started"] .controles-ar,
+model-viewer[ar-status="object-placed"] .controles-ar { display: flex; }
+model-viewer[ar-status="session-started"] .ayuda-ar { display: block; }
 .progreso { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: transparent; }
 .progreso > div { height: 100%; width: 0; background: var(--ocre); transition: width .2s; }
 .aviso-qr {

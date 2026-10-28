@@ -14,7 +14,15 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 | Champeta (picó + bailarines) | este repo, piso 18 | baile en bucle de 8.3 s | 5.4 MB |
 | Gaitero | este repo, piso 10 | bucle de 2.7 s (gaita) | 1.3 MB |
 
-Cada modelo también tiene un `.usdz` animado para iPhone/iPad (Quick Look).
+## Audio y animación en AR
+
+- **Android (Chrome con ARCore):** la AR se abre dentro de la página (WebXR). Al colocar el modelo
+  arranca la narración (y la animación desde cero cuando va sincronizada); dentro de la vista AR hay
+  botones para detener/reanudar la historia y la música. Si la página se abrió en otro navegador,
+  se ofrece "Abrir en Chrome".
+- **iPhone/iPad (Quick Look):** cada modelo tiene un `.usdz` por idioma (`models/<id>-<es|en|pt>.usdz`)
+  con la narración incluida: al colocar el modelo se reproduce la animación en bucle y la narración.
+  Se generan con `herramientas/conversion/usdz_con_audio.py`.
 
 ## Páginas
 

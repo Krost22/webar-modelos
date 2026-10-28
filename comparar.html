@@ -20,7 +20,7 @@
   <main class="comparar" id="comparar"></main>
 
   <script type="module">
-    import { buscarModelo } from './assets/modelos.js';
+    import { buscarModelo, usdzDe } from './assets/modelos.js';
 
     const ids = ['india-catalina-em', 'india-catalina-ic'];
     const visores = [];
@@ -31,9 +31,9 @@
       lado.innerHTML = `
         <div class="etiqueta"><strong>${m.variante}</strong><small>${m.origen}</small></div>
         <div class="escenario">
-          <model-viewer src="${m.glb}" ios-src="${m.usdz || ''}" poster="${m.poster}" alt="${m.nombre} – ${m.variante}"
+          <model-viewer src="${m.glb}" ios-src="${usdzDe(m, 'es')}" poster="${m.poster}" alt="${m.nombre} – ${m.variante}"
             camera-controls touch-action="pan-y" autoplay camera-orbit="0deg 80deg auto"
-            ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto"
+            ar ar-modes="webxr quick-look" ar-scale="auto"
             shadow-intensity="1" exposure="1.05" environment-image="neutral" interaction-prompt="none">
             <button slot="ar-button" class="btn-ar" type="button">Ver en AR</button>
           </model-viewer>
@@ -50,6 +50,17 @@
       document.getElementById('comparar').append(lado);
       const mv = lado.querySelector('model-viewer');
       mv.addEventListener('load', () => mv.availableAnimations.length && mv.play());
+      // Android (WebXR): narración al colocar el modelo; en iPhone la trae el USDZ.
+      const voz = new Audio(m.narracion.es);
+      voz.preload = 'none';
+      mv.addEventListener('ar-status', (e) => {
+        const s = e.detail.status;
+        if (s === 'object-placed' && voz.paused) {
+          voz.currentTime = 0;
+          if (m.sincronizar) mv.currentTime = 0;
+          voz.play().catch(() => {});
+        } else if (s === 'not-presenting') voz.pause();
+      });
       visores.push({ mv, m });
     }
 

@@ -9,7 +9,6 @@ export const MODELOS = [
     origen: 'AR-New-EMHotels-APP (piso 10)',
     grupo: 'india',
     glb: 'models/india-catalina-em.glb',
-    usdz: 'models/india-catalina-em.usdz',
     poster: 'posters/india-catalina-em.webp',
     descripcion:
       'Figura dorada de la India Catalina, símbolo de Cartagena, con su animación original en bucle.',
@@ -24,7 +23,6 @@ export const MODELOS = [
     origen: 'AR-IndiaCatalina',
     grupo: 'india',
     glb: 'models/india-catalina-ic.glb',
-    usdz: 'models/india-catalina-ic.usdz',
     poster: 'posters/india-catalina-ic.webp',
     descripcion:
       'Estatua de bronce sobre su pedestal. Alza los brazos mientras el casco colonial y la tiara aparecen y levitan, como en la línea de tiempo original.',
@@ -42,7 +40,6 @@ export const MODELOS = [
     origen: 'AR-IndiaCatalina',
     grupo: 'monumento',
     glb: 'models/torre-del-reloj.glb',
-    usdz: 'models/torre-del-reloj.usdz',
     poster: 'posters/torre-del-reloj.webp',
     descripcion:
       'La antigua Puerta del Puente con su muralla. A los 10 s de la narración se levanta el puente levadizo y los segunderos de los cuatro relojes avanzan.',
@@ -61,7 +58,6 @@ export const MODELOS = [
     origen: 'AR-IndiaCatalina',
     grupo: 'monumento',
     glb: 'models/castillo-san-felipe.glb',
-    usdz: 'models/castillo-san-felipe.usdz',
     poster: 'posters/castillo-san-felipe.webp',
     descripcion:
       'La fortaleza sobre el cerro, rodeada de manglar y agua, con un galeón. Durante la narración disparan los cañones.',
@@ -78,7 +74,6 @@ export const MODELOS = [
     origen: 'AR-New-EMHotels-APP (piso 18)',
     grupo: 'cultura',
     glb: 'models/champeta-pico.glb',
-    usdz: 'models/champeta-pico.usdz',
     poster: 'posters/champeta-pico.webp',
     descripcion: 'Tarima de champeta con su picó, pantallas y dos bailarines en movimiento.',
     narracion: { es: 'audio/champeta-es.mp3', en: 'audio/champeta-en.mp3', pt: 'audio/champeta-pt.mp3' },
@@ -93,7 +88,6 @@ export const MODELOS = [
     origen: 'AR-New-EMHotels-APP (piso 10)',
     grupo: 'cultura',
     glb: 'models/gaitero.glb',
-    usdz: 'models/gaitero.usdz',
     poster: 'posters/gaitero.webp',
     descripcion: 'Gaitero con sombrero vueltiao tocando la gaita, con su animación original.',
     narracion: { es: 'audio/gaitero-es.mp3', en: 'audio/gaitero-en.mp3', pt: 'audio/gaitero-pt.mp3' },
@@ -112,4 +106,20 @@ export function buscarModelo(id) {
 // URL absoluta de una página del sitio (sirve para los QR).
 export function urlDe(pagina, base = location.href) {
   return new URL(pagina, base).href;
+}
+
+// USDZ para iPhone/iPad (Quick Look) con la narración incluida en el idioma pedido.
+export function usdzDe(modelo, idioma) {
+  const l = modelo.narracion?.[idioma] ? idioma : Object.keys(modelo.narracion || { es: 1 })[0];
+  return `models/${modelo.id}-${l}.usdz`;
+}
+
+export const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+export const esAndroid = /Android/i.test(navigator.userAgent);
+
+// Enlace que abre esta misma página en Chrome (Android), donde la AR funciona con audio.
+export function enlaceChrome(url = location.href) {
+  const u = new URL(url);
+  return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=${u.protocol.replace(':', '')};package=com.android.chrome;end`;
 }

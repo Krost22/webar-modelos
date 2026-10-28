@@ -23,16 +23,25 @@
   </header>
 
   <main class="escenario">
+    <!-- Android: AR dentro de la página (WebXR), con audio controlado por la página.
+         iPhone/iPad: Quick Look con un USDZ que ya trae la narración. -->
     <model-viewer id="mv" camera-controls touch-action="pan-y" autoplay
-      ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" ar-placement="floor"
+      ar ar-modes="webxr quick-look" ar-scale="auto" ar-placement="floor"
       shadow-intensity="1" shadow-softness="0.9" exposure="1.05" environment-image="neutral"
       interaction-prompt="auto" loading="eager" alt="">
-      <button slot="ar-button" class="btn-ar" type="button">
+      <button slot="ar-button" class="btn-ar" id="btnAr" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg>
         Ver en tu espacio (AR)
       </button>
       <div slot="progress-bar" class="progreso"><div id="barra"></div></div>
+      <!-- Controles visibles solo durante la sesión AR (WebXR) -->
+      <div class="controles-ar" id="controlesAr">
+        <button class="btn btn-mar" id="btnArNarracion" type="button">■ Detener historia</button>
+        <button class="btn" id="btnArMusica" type="button" aria-pressed="false" hidden>♪ Música</button>
+      </div>
+      <div class="ayuda-ar" id="ayudaAr">Apunta al piso y toca para colocar el modelo. La historia empieza al colocarlo.</div>
     </model-viewer>
+    <a class="btn-ar" id="btnChrome" hidden>Abrir en Chrome para ver en AR</a>
     <div class="aviso-qr" id="avisoQr" hidden>
       <div class="qr" id="avisoQrCodigo"></div>
       Escanéalo con tu celular para verlo en realidad aumentada.
@@ -41,6 +50,7 @@
 
   <section class="panel">
     <p id="descripcion"></p>
+    <p id="avisoAr" hidden></p>
     <div class="controles">
       <button class="btn btn-mar" id="btnNarracion" type="button" hidden>▶ Escuchar historia</button>
       <span class="idiomas" id="idiomas"></span>
@@ -62,13 +72,15 @@
   </dialog>
 
   <script type="module">
-    import { MODELOS, IDIOMAS, buscarModelo } from './assets/modelos.js';
+    import { MODELOS, IDIOMAS, buscarModelo, usdzDe, esIOS, esAndroid, enlaceChrome } from './assets/modelos.js';
     import { qrSvg, descargarQrPng, esDireccionLocal } from './assets/qr.js';
 
     const params = new URLSearchParams(location.search);
     const modelo = buscarModelo(params.get('m')) || MODELOS[0];
     const mv = document.getElementById('mv');
     const $ = (id) => document.getElementById(id);
+    const idiomas = Object.keys(modelo.narracion || {});
+    let idioma = idiomas.includes(params.get('lang')) ? params.get('lang') : idiomas[0];
 
     // --- Datos del modelo ---
     document.title = `${modelo.nombre} · Visor AR`;
@@ -78,7 +90,7 @@
     mv.alt = `${modelo.nombre} – ${modelo.variante}`;
     mv.poster = modelo.poster;
     if (modelo.camara) mv.cameraOrbit = modelo.camara;
-    if (modelo.usdz) mv.iosSrc = modelo.usdz;
+    mv.iosSrc = usdzDe(modelo, idioma);
     mv.src = modelo.glb;
 
     mv.addEventListener('progress', (e) => {
@@ -98,18 +110,32 @@
     $('btnCerrarQr').addEventListener('click', () => $('modalQr').close());
     $('btnDescargarQr').addEventListener('click', () => descargarQrPng(urlPagina, `qr-${modelo.id}.png`));
 
-    // En escritorio (sin AR) se muestra el QR en una esquina.
     mv.addEventListener('load', () => {
-      if (!mv.canActivateAR && matchMedia('(min-width: 761px)').matches) {
-        ponerQr($('avisoQrCodigo'));
-        $('avisoQr').hidden = false;
-      }
       if (mv.availableAnimations.length) {
         mv.animationName = mv.availableAnimations[0];
         mv.play();
         $('btnPausa').hidden = false;
       }
+      // canActivateAR se resuelve poco después de cargar.
+      setTimeout(revisarSoporteAr, 600);
     });
+
+    function revisarSoporteAr() {
+      if (mv.canActivateAR) return;
+      if (esAndroid) {
+        const enChrome = /Chrome\//.test(navigator.userAgent) && !/SamsungBrowser|EdgA|OPR|wv\)|FBAN|FBAV|Instagram/.test(navigator.userAgent);
+        if (enChrome) {
+          $('avisoAr').hidden = false;
+          $('avisoAr').textContent = 'Este celular no es compatible con realidad aumentada (requiere ARCore). Puedes ver el modelo en 3D.';
+        } else {
+          $('btnChrome').href = enlaceChrome();
+          $('btnChrome').hidden = false;
+        }
+      } else if (!esIOS && matchMedia('(min-width: 761px)').matches) {
+        ponerQr($('avisoQrCodigo'));
+        $('avisoQr').hidden = false;
+      }
+    }
 
     // --- Bucle de un tramo de la animación (intro + bucle) ---
     function vigilarBucle() {
@@ -129,11 +155,15 @@
     // --- Narración, efectos y música ---
     const narracion = new Audio();
     narracion.preload = 'none';
-    let idioma = Object.keys(modelo.narracion || {})[0];
     const ambiente = modelo.ambiente ? Object.assign(new Audio(modelo.ambiente), { loop: true, volume: 0.35 }) : null;
     const eventos = (modelo.eventos || []).map((e) => ({ ...e, audio: new Audio(e.audio), hecho: false }));
     let retraso = null;
     let sonando = false;
+
+    function pintarBotones() {
+      $('btnNarracion').textContent = sonando ? '■ Detener historia' : '▶ Escuchar historia';
+      $('btnArNarracion').textContent = sonando ? '■ Detener historia' : '▶ Escuchar historia';
+    }
 
     function detenerNarracion() {
       sonando = false;
@@ -141,10 +171,12 @@
       narracion.pause();
       ambiente?.pause();
       eventos.forEach((e) => { e.audio.pause(); e.hecho = false; });
-      $('btnNarracion').textContent = '▶ Escuchar historia';
+      $('tiempo').textContent = '';
+      pintarBotones();
     }
 
     function iniciarNarracion() {
+      if (!modelo.narracion) return;
       clearTimeout(retraso);
       sonando = true;
       narracion.src = modelo.narracion[idioma];
@@ -157,15 +189,17 @@
       }
       ambiente && (ambiente.currentTime = 0, ambiente.play().catch(() => {}));
       retraso = setTimeout(() => narracion.play().catch(() => {}), (modelo.retrasoNarracion || 0) * 1000);
-      $('btnNarracion').textContent = '■ Detener historia';
+      pintarBotones();
     }
+
+    const alternarNarracion = () => (sonando ? detenerNarracion() : iniciarNarracion());
 
     if (modelo.narracion) {
       $('btnNarracion').hidden = false;
-      $('btnNarracion').addEventListener('click', () => (sonando ? detenerNarracion() : iniciarNarracion()));
-      const langs = Object.keys(modelo.narracion);
-      if (langs.length > 1) {
-        for (const l of langs) {
+      $('btnNarracion').addEventListener('click', alternarNarracion);
+      $('btnArNarracion').addEventListener('click', alternarNarracion);
+      if (idiomas.length > 1) {
+        for (const l of idiomas) {
           const b = document.createElement('button');
           b.className = 'btn';
           b.type = 'button';
@@ -174,12 +208,15 @@
           b.setAttribute('aria-pressed', String(l === idioma));
           b.addEventListener('click', () => {
             idioma = l;
+            mv.iosSrc = usdzDe(modelo, idioma);
             [...$('idiomas').children].forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
             if (sonando) iniciarNarracion();
           });
           $('idiomas').append(b);
         }
       }
+    } else {
+      $('btnArNarracion').hidden = true;
     }
     narracion.addEventListener('timeupdate', () => {
       const t = narracion.currentTime + (modelo.retrasoNarracion || 0);
@@ -187,17 +224,36 @@
       const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
       $('tiempo').textContent = narracion.duration ? `${fmt(narracion.currentTime)} / ${fmt(narracion.duration)}` : '';
     });
-    narracion.addEventListener('ended', () => { sonando = false; ambiente?.pause(); $('btnNarracion').textContent = '▶ Escuchar historia'; $('tiempo').textContent = ''; });
+    narracion.addEventListener('ended', () => { sonando = false; ambiente?.pause(); $('tiempo').textContent = ''; pintarBotones(); });
 
     if (modelo.musica) {
       const musica = Object.assign(new Audio(modelo.musica), { loop: true, volume: 0.5, preload: 'none' });
-      $('btnMusica').hidden = false;
-      $('btnMusica').addEventListener('click', () => {
+      const alternarMusica = () => {
         const on = musica.paused;
         on ? musica.play().catch(() => {}) : musica.pause();
         $('btnMusica').setAttribute('aria-pressed', String(on));
-      });
+        $('btnArMusica').setAttribute('aria-pressed', String(on));
+      };
+      $('btnMusica').hidden = false;
+      $('btnArMusica').hidden = false;
+      $('btnMusica').addEventListener('click', alternarMusica);
+      $('btnArMusica').addEventListener('click', alternarMusica);
     }
+
+    // --- AR ---
+    // iPhone/iPad: el USDZ ya reproduce la narración; se apaga la de la página para no oír dos voces.
+    $('btnAr').addEventListener('click', () => { if (esIOS) detenerNarracion(); }, true);
+
+    // Android (WebXR): la historia arranca cuando se coloca el modelo y se detiene al salir.
+    let enAr = false;
+    let colocado = false;
+    mv.addEventListener('ar-status', (e) => {
+      const s = e.detail.status;
+      if (s === 'session-started') { enAr = true; colocado = false; }
+      else if (s === 'object-placed' && enAr && !colocado) { colocado = true; iniciarNarracion(); }
+      else if (s === 'not-presenting' && enAr) { enAr = false; detenerNarracion(); }
+      else if (s === 'failed') enAr = false;
+    });
   </script>
 </body>
 </html>
