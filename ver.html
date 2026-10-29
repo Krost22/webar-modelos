@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Visor AR</title>
   <meta name="description" content="Modelo 3D en realidad aumentada">
-  <meta name="theme-color" content="#100d0a">
+  <meta name="theme-color" content="#fbf7ef">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -115,6 +115,7 @@
     $('btnDescargarQr').addEventListener('click', () => descargarQrPng(urlPagina, `qr-${modelo.id}.png`));
 
     mv.addEventListener('load', () => {
+      setTimeout(() => ($('barra').style.width = '0'), 300);
       if (mv.availableAnimations.length) {
         mv.animationName = mv.availableAnimations[0];
         mv.play();

@@ -819,6 +819,14 @@ if MODE == "prefab" and bake:
             groups.append((GOS[comp["go"]]["transform"], [tl.tracks[f] for f in order]))
             log("timeline group on", GOS[comp["go"]]["name"], [tl.tracks[f]["name"] for f in order])
     clocks = bake.get("clocks")
+    REF_POSE = {}
+    if bake.get("clip_referencia"):
+        _ref = ua.Clip(bake["clip_referencia"])
+        for _p, _k in _ref.sample(_ref.start).items():
+            if _k.get("rot"):
+                REF_POSE[_p] = ua.qnorm(tuple(_k["rot"]))
+            elif _k.get("euler"):
+                REF_POSE[_p] = ua.euler_to_quat(_k["euler"])
 
     def ease_out_quint(x):
         return 1 - (1 - x) ** 5
@@ -847,6 +855,14 @@ if MODE == "prefab" and bake:
                     elif "euler" in kinds and kinds["euler"]:
                         q = ua.euler_to_quat(kinds["euler"])
                     p = kinds.get("pos")
+                    if path and bake.get("solo_rotacion_huesos"):
+                        # Clip hecho para otro esqueleto (otras longitudes y otra pose de reposo):
+                        # se conservan las longitudes del modelo y se aplica solo cuánto gira cada hueso
+                        # respecto al primer cuadro del clip de referencia, encima de la pose de reposo.
+                        p = None
+                        if q is not None and REF_POSE.get(path):
+                            r0 = REF_POSE[path]
+                            q = ua.qnorm(ua.qmul(rest["rot"], ua.qmul((-r0[0], -r0[1], -r0[2], r0[3]), q)))
                     if path == "" and tr["offset_mode"] == 1:
                         # scene offsets: clip motion relative to its first frame, from the rest transform
                         f0 = first.get("", {})
@@ -973,6 +989,56 @@ if MODE == "prefab" and bake:
                 for path in ("location", "rotation_quaternion", "scale"):
                     pb.keyframe_insert(path, frame=f + 1)
         log("baked", len(bmap), "bones on", arm.name)
+        # Pose de brazos hecha a mano (reemplaza clips que no encajan con este esqueleto).
+        # keyframes: [{"t": s, "huesos": {"LeftArm": [x, y, z], ...}}] en grados, ejes locales del hueso.
+        manual = bake.get("pose_manual")
+        if manual:
+            keys = sorted(manual, key=lambda k: k["t"])
+            names = sorted({n for k in keys for n in k["huesos"]})
+
+            def angles_at(n, t):
+                pts = [(k["t"], k["huesos"][n]) for k in keys if n in k["huesos"]]
+                if t <= pts[0][0]:
+                    return pts[0][1]
+                for (t0, a0), (t1, a1) in zip(pts, pts[1:]):
+                    if t0 <= t <= t1:
+                        s = (t - t0) / max(t1 - t0, 1e-6)
+                        s = s * s * (3 - 2 * s)
+                        return [a + (b - a) * s for a, b in zip(a0, a1)]
+                return pts[-1][1]
+
+            for n in names:
+                pb = arm.pose.bones.get("mixamorig:" + n) or arm.pose.bones.get(n)
+                if pb is None:
+                    continue
+                if arm.animation_data and arm.animation_data.action:
+                    for fc in list(arm.animation_data.action.fcurves) if hasattr(arm.animation_data.action, "fcurves") else []:
+                        if f'"{pb.name}"' in fc.data_path:
+                            arm.animation_data.action.fcurves.remove(fc)
+                pb.rotation_mode = "XYZ"
+                pb.location = (0, 0, 0)
+                for f in range(len(poses)):
+                    pb.rotation_euler = [math.radians(a) for a in angles_at(n, f / FPS)]
+                    pb.keyframe_insert("rotation_euler", frame=f + 1)
+                    if f == 0:
+                        pb.keyframe_insert("location", frame=1)
+            log("pose manual en", len(names), "huesos")
+        if os.environ.get("DEBUG_HUESOS"):
+            last = len(poses)
+            scene.frame_set(last)
+            bpy.context.view_layer.update()
+            for n in bmap:
+                b = arm.data.bones[n]
+                pbm = arm.pose.bones[n]
+                log(f"  BONE {n}: connect={b.use_connect} inh_rot={b.use_inherit_rotation} inh_scale={b.inherit_scale} "
+                    f"rotdiff={math.degrees(pbm.matrix.to_quaternion().rotation_difference(pm[n].to_quaternion()).angle):.1f} "
+                    f"locdiff={(pbm.matrix.translation - pm[n].translation).length:.3f} scale_pm={tuple(round(s, 3) for s in pm[n].to_scale())} "
+                    f"basis_loc={tuple(round(v, 3) for v in pbm.location)} basis_scale={tuple(round(v, 3) for v in pbm.scale)}")
+            for n in ("mixamorig:LeftArm", "mixamorig:LeftForeArm", "mixamorig:LeftHand", "mixamorig:RightHand"):
+                if n in all_tids:
+                    unity = (u2b(world_u(all_tids[n], poses[-1])) @ C[n]).translation
+                    blend = (arm.matrix_world @ arm.pose.bones[n].matrix).translation
+                    log(f"  CHECK {n}: unity={tuple(round(v, 2) for v in unity)} blender={tuple(round(v, 2) for v in blend)}")
     scene.frame_start, scene.frame_end = 1, nframes
     scene.render.fps = FPS
 
@@ -1038,6 +1104,22 @@ for ob in OUT.objects:
     m = re.match(r"^\d+:(.*)$", ob.name)
     if m:
         ob.name = m.group(1)
+# Material propio para objetos concretos, p. ej. {"Gaita.002": {"color": [r, g, b] (sRGB), "roughness": 0.55}}
+for oname, ov in cfg.get("material_objeto", {}).items():
+    ob = OUT.objects.get(oname)
+    if ob is None or ob.type != "MESH":
+        log("  material_objeto: no existe", oname)
+        continue
+    lin = tuple(((c / 12.92) if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4) for c in ov["color"])
+    mat = make_pbr(f"{oname}_madera", base_color=lin + (1,), roughness=ov.get("roughness", 0.55),
+                   metallic=ov.get("metallic", 0.0), double_sided=True)
+    if len(ob.material_slots) == 0:
+        ob.data.materials.append(mat)
+    for i, slot in enumerate(ob.material_slots):
+        slot.link = "DATA"
+        ob.data.materials[i] = mat
+        slot.material = mat
+    log("  material_objeto", oname, ov["color"], "slots", len(ob.material_slots))
 set_active_collection(OUT)
 os.makedirs(OUT_DIR, exist_ok=True)
 glb = os.path.join(OUT_DIR, NAME + ".glb")
