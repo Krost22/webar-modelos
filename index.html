@@ -5,43 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cartagena en AR</title>
   <meta name="description" content="Modelos 3D de Cartagena en realidad aumentada, con acceso por código QR">
+  <meta name="theme-color" content="#100d0a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/estilos.css">
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
-  <div class="contenedor">
-    <header class="cabecera">
-      <div class="marca">Cartagena · Realidad aumentada</div>
-      <h1>Modelos 3D en AR</h1>
-      <p>Toca un modelo para verlo en 3D y colocarlo en tu espacio con la cámara del celular. Cada modelo tiene su propio código QR para abrirlo directamente.</p>
-      <div class="acciones-cabecera">
-        <a class="btn btn-primario" href="comparar.html">Comparar las dos India Catalina</a>
-        <a class="btn" href="qr.html">Hoja de códigos QR</a>
+  <header class="portada">
+    <div class="lado-texto">
+      <div class="marca">
+        <span class="etiqueta-sup">Cartagena · Realidad aumentada</span>
+        <nav>
+          <a href="#sala-india">India Catalina</a>
+          <a href="#sala-monumentos">Monumentos</a>
+          <a href="#sala-cultura">Cultura</a>
+          <a href="qr.html">Códigos QR</a>
+        </nav>
       </div>
-    </header>
+      <h1>La ciudad, <em>en tu&nbsp;espacio</em>.</h1>
+      <p class="intro">Monumentos y personajes de Cartagena en 3D, con sus animaciones y su historia narrada. Escanea un código QR y colócalos frente a ti con la cámara del celular.</p>
+      <div class="acciones">
+        <a class="btn btn-primario" href="ver.html?m=torre-del-reloj">Ver la Torre del Reloj en AR</a>
+        <a class="btn" href="#sala-india">Recorrer la colección</a>
+      </div>
+      <div class="escenario-portada">
+        <div class="foco"></div>
+        <model-viewer src="models/torre-del-reloj.glb" poster="posters/torre-del-reloj.webp" alt="Torre del Reloj de Cartagena en 3D"
+          auto-rotate auto-rotate-delay="0" rotation-per-second="12deg" camera-orbit="30deg 68deg auto" autoplay
+          interaction-prompt="none" disable-zoom disable-pan touch-action="pan-y" camera-controls
+          shadow-intensity="1" exposure="1.05" environment-image="neutral"></model-viewer>
+      </div>
+    </div>
+    <div class="lado-piedra">
+      <div class="celular" aria-hidden="true">
+        <div class="pantalla">
+          <img src="posters/india-catalina-em.webp" alt="">
+          <div class="pie-cel">
+            <strong>India Catalina</strong>
+            <span>Versión EM Hotels · narración ES/EN/PT</span>
+            <div class="boton-cel">Ver en tu espacio (AR)</div>
+          </div>
+        </div>
+        <div class="qr-flotante" id="qrPortada"></div>
+        <div class="escanea">Escanéame</div>
+      </div>
+    </div>
+  </header>
 
-    <section class="seccion">
-      <h2>India Catalina: dos versiones</h2>
-      <p>La misma figura hecha en los dos proyectos. Ábrelas lado a lado para decidir cuál se ve mejor.</p>
-      <div class="rejilla" id="g-india"></div>
+  <main class="contenedor">
+    <section class="sala" id="sala-india">
+      <div class="cabeza-sala">
+        <span class="numero">01</span>
+        <h2>India Catalina, dos versiones</h2>
+        <p>La misma figura hecha en los dos proyectos. Mírala lado a lado y decide cuál se ve mejor.</p>
+      </div>
+      <div class="banda-comparar">
+        <div class="pieza"><img src="posters/india-catalina-em.webp" alt="India Catalina, versión EM Hotels"></div>
+        <div class="pieza"><img src="posters/india-catalina-ic.webp" alt="India Catalina, versión AR-IndiaCatalina"></div>
+        <div class="placa">
+          <span class="etiqueta-sup">Comparación</span>
+          <h3>Dorada y animada, o bronce sobre su pedestal</h3>
+          <p>Gira una y la otra la sigue. Cada una tiene su botón de AR y su ficha técnica.</p>
+          <div><a class="btn btn-primario" href="comparar.html">Comparar lado a lado</a></div>
+        </div>
+      </div>
+      <div class="rejilla" id="g-india" style="margin-top:18px"></div>
     </section>
 
-    <section class="seccion">
-      <h2>Monumentos</h2>
-      <p>Del proyecto AR-IndiaCatalina, con sus animaciones y narración originales.</p>
+    <section class="sala" id="sala-monumentos">
+      <div class="cabeza-sala">
+        <span class="numero">02</span>
+        <h2>Monumentos</h2>
+        <p>La Puerta del Reloj con su puente levadizo y el Castillo San Felipe, con su narración original.</p>
+      </div>
       <div class="rejilla" id="g-monumento"></div>
     </section>
 
-    <section class="seccion">
-      <h2>Cultura del Caribe</h2>
-      <p>Del proyecto EM Hotels, con narración en español, inglés y portugués.</p>
+    <section class="sala" id="sala-cultura">
+      <div class="cabeza-sala">
+        <span class="numero">03</span>
+        <h2>Cultura del Caribe</h2>
+        <p>La champeta y el gaitero, con narración en español, inglés y portugués y su música.</p>
+      </div>
       <div class="rejilla" id="g-cultura"></div>
     </section>
 
     <footer class="pie-pagina">
-      AR en Android (Chrome con ARCore) y iPhone/iPad (Safari, Quick Look). En computador se ve en 3D y muestra el QR para abrirlo en el celular.
+      <span>AR en Android (Chrome) y iPhone/iPad (Safari). En computador se ve en 3D.</span>
+      <a href="qr.html">Hoja de códigos QR para imprimir →</a>
     </footer>
-  </div>
+  </main>
 
   <dialog class="modal" id="modalQr">
     <h2 id="modalTitulo"></h2>
@@ -61,12 +117,16 @@
     const $ = (id) => document.getElementById(id);
     let actual = null;
 
+    $('qrPortada').innerHTML = qrSvg(new URL('ver.html?m=india-catalina-em', location.href).href, 'India Catalina');
+
+    const conMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
     for (const m of MODELOS) {
       const url = `ver.html?m=${m.id}`;
       const art = document.createElement('article');
       art.className = 'tarjeta';
       art.innerHTML = `
-        <a class="imagen" href="${url}"><img src="${m.poster}" alt="${m.nombre} – ${m.variante}" loading="lazy"></a>
+        <a class="imagen" href="${url}" aria-label="Ver ${m.nombre} – ${m.variante}"><img src="${m.poster}" alt="${m.nombre} – ${m.variante}" loading="lazy"></a>
         <div class="cuerpo">
           <span class="chip ${m.origen.startsWith('AR-IndiaCatalina') ? '' : 'ocre'}">${m.origen}</span>
           <h3>${m.nombre}</h3>
@@ -77,6 +137,26 @@
           </div>
         </div>`;
       $(`g-${m.grupo}`).append(art);
+
+      // En computador, la vitrina muestra el modelo en 3D girando al pasar el mouse.
+      if (conMouse) {
+        const caja = art.querySelector('.imagen');
+        art.addEventListener('mouseenter', () => {
+          let mv = caja.querySelector('model-viewer');
+          if (!mv) {
+            mv = document.createElement('model-viewer');
+            Object.assign(mv, { src: m.glb, alt: m.nombre });
+            for (const [k, v] of Object.entries({ 'auto-rotate': '', 'auto-rotate-delay': '0', 'rotation-per-second': '30deg', autoplay: '',
+              'interaction-prompt': 'none', 'environment-image': 'neutral', 'shadow-intensity': '1', 'camera-orbit': m.camara || '' })) mv.setAttribute(k, v);
+            mv.addEventListener('load', () => mv.classList.add('visible'));
+            caja.append(mv);
+          } else {
+            mv.classList.add('visible');
+            mv.play?.();
+          }
+        });
+        art.addEventListener('mouseleave', () => caja.querySelector('model-viewer')?.classList.remove('visible'));
+      }
     }
 
     document.addEventListener('click', (e) => {
