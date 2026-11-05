@@ -324,6 +324,7 @@ export class QRDelModelo {
     if (this.reanudar) { this.reanudar = false; mv.play(); }
     mv.cameraControls = true;
     mv.autoRotate = this.regreso?.autoRotate ?? true;
+    if (this.regreso?.maxOrbita) mv.maxCameraOrbit = this.regreso.maxOrbita;
     mv.style.transition = '';
     mv.style.opacity = '';
     this.renderer.clear();
@@ -347,6 +348,9 @@ export class QRDelModelo {
       const alPiso = Math.max(mitad / (tan * 0.86), mitad / (tan * aspecto * 0.9));
       this.vistaQR = { theta: 0, phi: 0.0001, radius: alPiso - (this.datos.centroY - this.datos.piso), fov: FOV };
       this.regreso.orbita.theta = Math.atan2(Math.sin(o.theta), Math.cos(o.theta));
+      // Deja alejar la cámara lo justo para la vista del QR (se restaura al volver).
+      this.regreso.maxOrbita = mv.maxCameraOrbit;
+      mv.maxCameraOrbit = `auto 180deg ${(Math.max(this.vistaQR.radius, o.radius) * 1.15).toFixed(3)}m`;
       mv.autoRotate = false;
       mv.cameraControls = false;
     }
@@ -411,6 +415,7 @@ export class QRDelModelo {
           this.cubos.visible = false;
           mv.cameraControls = true;
           mv.fieldOfView = `${this.regreso.orbita.fov}deg`;
+          if (this.regreso.maxOrbita) mv.maxCameraOrbit = this.regreso.maxOrbita;
           mv.autoRotate = this.regreso.autoRotate ?? true;
           mv.style.opacity = '';
           mv.style.transition = '';

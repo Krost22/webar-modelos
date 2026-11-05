@@ -21,9 +21,11 @@ let audio = null; // estado de sonido del modelo actual
 /* ---------------------------------------------------------------- QR escondido en el modelo */
 // El botón QR descompone el modelo en cubos de sus colores que forman su código QR, y vuelve.
 const suelo = new QRDelModelo($('lienzoQr'), mv);
-// Sin límites de distancia ni de ángulo: la cámara debe poder alejarse y mirar desde arriba.
+// La cámara debe poder mirar desde arriba (vista del QR). La distancia máxima se amplía solo
+// mientras dura el QR: model-viewer calcula el plano de recorte cercano a partir de ella, y un
+// máximo enorme recortaba la parte delantera de los modelos (el Castillo).
 mv.minCameraOrbit = 'auto 0deg 0m';
-mv.maxCameraOrbit = 'auto 180deg 1000m';
+mv.maxCameraOrbit = 'auto 180deg auto';
 let qrTrasCarga = false;
 const urlModelo = (m) => new URL(`ver.html?m=${m.id}`, location.href).href;
 suelo.alCambiar = (enQR) => {
