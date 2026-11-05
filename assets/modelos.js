@@ -1,38 +1,7 @@
 // Catálogo de modelos del visor AR.
-// Cada modelo se abre en ver.html?m=<id>; ese es el enlace que llevan los códigos QR.
+// Cada modelo se abre en index.html?m=<id> (los QR antiguos con ver.html?m=<id> redirigen ahí).
 
 export const MODELOS = [
-  {
-    id: 'india-catalina-em',
-    nombre: 'India Catalina',
-    variante: 'Versión EM Hotels',
-    origen: 'AR-New-EMHotels-APP (piso 10)',
-    grupo: 'india',
-    glb: 'models/india-catalina-em.glb',
-    poster: 'posters/india-catalina-em.webp',
-    descripcion:
-      'Figura dorada de la India Catalina, símbolo de Cartagena, con su animación original en bucle.',
-    narracion: { es: 'audio/india-em-es.mp3', en: 'audio/india-em-en.mp3', pt: 'audio/india-em-pt.mp3' },
-    stats: { mb: 1.59, tris: 24362, texturas: 12, anim: 'Bucle de 8 s (clip del FBX)' },
-    camara: '20deg 80deg auto',
-  },
-  {
-    id: 'india-catalina-ic',
-    nombre: 'India Catalina',
-    variante: 'Versión AR-IndiaCatalina',
-    origen: 'AR-IndiaCatalina',
-    grupo: 'india',
-    glb: 'models/india-catalina-ic.glb',
-    poster: 'posters/india-catalina-ic.webp',
-    descripcion:
-      'Estatua de bronce sobre su pedestal. Alza los brazos mientras el casco colonial y la tiara aparecen y levitan, como en la línea de tiempo original.',
-    narracion: { es: 'audio/india-ic-es.mp3' },
-    // Introducción 0–8.08 s; después repite el tramo de levitación (8.08–11.08 s).
-    bucle: { inicio: 8.083, fin: 11.083 },
-    sincronizar: true,
-    stats: { mb: 5.64, tris: 60862, texturas: 8, anim: 'Intro de 8 s + levitación en bucle (Timeline)' },
-    camara: '20deg 78deg auto',
-  },
   {
     id: 'torre-del-reloj',
     nombre: 'Torre del Reloj',
@@ -68,6 +37,37 @@ export const MODELOS = [
     camara: '30deg 55deg auto',
   },
   {
+    id: 'india-catalina-em',
+    nombre: 'India Catalina',
+    variante: 'Dorada y en movimiento',
+    origen: 'AR-New-EMHotels-APP (piso 10)',
+    grupo: 'india',
+    glb: 'models/india-catalina-em.glb',
+    poster: 'posters/india-catalina-em.webp',
+    descripcion:
+      'Figura dorada de la India Catalina, símbolo de Cartagena, con su animación original en bucle.',
+    narracion: { es: 'audio/india-em-es.mp3', en: 'audio/india-em-en.mp3', pt: 'audio/india-em-pt.mp3' },
+    stats: { mb: 1.59, tris: 24362, texturas: 12, anim: 'Bucle de 8 s (clip del FBX)' },
+    camara: '20deg 80deg auto',
+  },
+  {
+    id: 'india-catalina-ic',
+    nombre: 'India Catalina',
+    variante: 'Bronce sobre su pedestal',
+    origen: 'AR-IndiaCatalina',
+    grupo: 'india',
+    glb: 'models/india-catalina-ic.glb',
+    poster: 'posters/india-catalina-ic.webp',
+    descripcion:
+      'Estatua de bronce sobre su pedestal. Alza los brazos mientras el casco colonial y la tiara aparecen y levitan, como en la línea de tiempo original.',
+    narracion: { es: 'audio/india-ic-es.mp3' },
+    // Introducción 0–8.08 s; después repite el tramo de levitación (8.08–11.08 s).
+    bucle: { inicio: 8.083, fin: 11.083 },
+    sincronizar: true,
+    stats: { mb: 5.64, tris: 60862, texturas: 8, anim: 'Intro de 8 s + levitación en bucle (Timeline)' },
+    camara: '20deg 78deg auto',
+  },
+  {
     id: 'champeta-pico',
     nombre: 'Champeta',
     variante: 'Picó y bailarines',
@@ -97,6 +97,8 @@ export const MODELOS = [
   },
 ];
 
+export const GRUPOS = { monumento: 'Monumento', india: 'Escultura', cultura: 'Cultura' };
+
 export const IDIOMAS = { es: 'Español', en: 'English', pt: 'Português' };
 
 export function buscarModelo(id) {
@@ -117,6 +119,10 @@ export function usdzDe(modelo, idioma) {
 export const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 export const esAndroid = /Android/i.test(navigator.userAgent);
+
+// Navegador interno de otra app (Instagram, Facebook, TikTok…): ahí la AR no suele abrir.
+export const enAppExterna = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Line\/|LinkedInApp|TikTok|musical_ly|BytedanceWebview|Snapchat/i
+  .test(navigator.userAgent);
 
 // Enlace que abre esta misma página en Chrome (Android), donde la AR funciona con audio.
 export function enlaceChrome(url = location.href) {

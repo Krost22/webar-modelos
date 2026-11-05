@@ -3,60 +3,75 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Comparar India Catalina</title>
+  <title>India Catalina, dos versiones · Cartagena en AR</title>
   <meta name="description" content="Las dos versiones de la India Catalina lado a lado">
-  <meta name="theme-color" content="#fbf7ef">
+  <meta name="theme-color" content="#070B12">
+  <meta name="color-scheme" content="dark">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/estilos.css">
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
 </head>
-<body class="visor">
+<body class="pagina-comparar">
   <header class="barra">
-    <a class="volver" href="index.html">← Modelos</a>
-    <div class="titulo">
-      <h1>India Catalina: comparación</h1>
-      <span>Gira una y la otra la sigue. Cada una tiene su botón de AR.</span>
-    </div>
-    <button class="btn" id="btnSync" type="button" aria-pressed="true">Girar juntas</button>
+    <a class="volver" href="index.html?m=india-catalina-em">← Vitrina</a>
+    <span class="etiqueta">India Catalina · dos versiones</span>
+    <button class="btn btn--sutil" id="btnSync" type="button" aria-pressed="true" style="min-height:38px;font-size:14px">Girar juntas</button>
   </header>
   <main class="comparar" id="comparar"></main>
 
   <script type="module">
-    import { buscarModelo, usdzDe } from './assets/modelos.js';
+    import { buscarModelo, usdzDe, esIOS } from './assets/modelos.js';
+    import { soportaQuickLook, abrirQuickLook } from './assets/quicklook.js';
 
-    const ids = ['india-catalina-em', 'india-catalina-ic'];
+    const conQuickLook = esIOS && soportaQuickLook();
     const visores = [];
-    for (const id of ids) {
+    for (const id of ['india-catalina-em', 'india-catalina-ic']) {
       const m = buscarModelo(id);
       const lado = document.createElement('section');
       lado.className = 'lado';
       lado.innerHTML = `
-        <div class="etiqueta"><strong>${m.variante}</strong><small>${m.origen}</small></div>
+        <div class="lado__cabeza">
+          <h2>${m.variante}</h2>
+          <span class="etiqueta">${m.stats.mb} MB · ${m.stats.tris.toLocaleString('es-CO')} triángulos</span>
+        </div>
         <div class="escenario">
-          <model-viewer src="${m.glb}" ios-src="${usdzDe(m, 'es')}" poster="${m.poster}" alt="${m.nombre} – ${m.variante}"
-            camera-controls touch-action="pan-y" autoplay camera-orbit="0deg 80deg auto"
-            ar ar-modes="webxr quick-look" ar-scale="auto"
-            shadow-intensity="1" exposure="1.05" environment-image="neutral" interaction-prompt="none">
-            <button slot="ar-button" class="btn-ar" type="button">Ver en AR</button>
+          <div class="foco" aria-hidden="true"></div>
+          <model-viewer src="${m.glb}" poster="${m.poster}" alt="India Catalina, ${m.variante}"
+            camera-controls disable-pan disable-zoom touch-action="pan-y" autoplay camera-orbit="0deg 80deg auto"
+            ar ar-modes="webxr" ar-placement="floor" ar-scale="auto" interaction-prompt="none"
+            shadow-intensity="1.1" shadow-softness="0.9" exposure="1" environment-image="neutral">
+            <span slot="ar-button" hidden></span>
+            <span slot="progress-bar" hidden></span>
           </model-viewer>
         </div>
-        <div class="ficha">
-          <dl>
-            <dt>Peso</dt><dd>${m.stats.mb} MB</dd>
-            <dt>Triángulos</dt><dd>${m.stats.tris.toLocaleString('es-CO')}</dd>
-            <dt>Texturas</dt><dd>${m.stats.texturas}</dd>
-            <dt>Animación</dt><dd>${m.stats.anim}</dd>
-          </dl>
-          <a href="ver.html?m=${m.id}">Abrir sola, con narración →</a>
+        <div class="lado__pie">
+          <button class="btn btn--coral" type="button" data-ar>Ver en tu espacio</button>
+          <a class="enlace" href="index.html?m=${m.id}">Con su historia →</a>
+          <details>
+            <summary>Ficha técnica</summary>
+            <dl>
+              <dt>Texturas</dt><dd>${m.stats.texturas}</dd>
+              <dt>Animación</dt><dd>${m.stats.anim}</dd>
+              <dt>Origen</dt><dd>${m.origen}</dd>
+            </dl>
+          </details>
         </div>`;
       document.getElementById('comparar').append(lado);
       const mv = lado.querySelector('model-viewer');
-      mv.addEventListener('load', () => mv.availableAnimations.length && mv.play());
+      const btn = lado.querySelector('[data-ar]');
+      mv.addEventListener('load', () => {
+        if (mv.availableAnimations.length) mv.play();
+        setTimeout(() => { btn.hidden = !(conQuickLook || mv.canActivateAR); }, 500);
+      });
+      btn.hidden = true;
+      btn.addEventListener('click', () => {
+        if (conQuickLook) abrirQuickLook({ url: usdzDe(m, 'es'), titulo: `India Catalina · ${m.variante}`, subtitulo: 'Cartagena en AR' });
+        else mv.activateAR();
+      });
       // Android (WebXR): narración al colocar el modelo; en iPhone la trae el USDZ.
-      const voz = new Audio(m.narracion.es);
-      voz.preload = 'none';
+      const voz = Object.assign(new Audio(m.narracion.es), { preload: 'none' });
       mv.addEventListener('ar-status', (e) => {
         const s = e.detail.status;
         if (s === 'object-placed' && voz.paused) {
@@ -68,7 +83,7 @@
       visores.push({ mv, m });
     }
 
-    // Bucle intro + tramo para la versión con Timeline.
+    // Intro + tramo en bucle para la versión con Timeline.
     (function vigilar() {
       for (const { mv, m } of visores) {
         const b = m.bucle;
@@ -77,10 +92,10 @@
       requestAnimationFrame(vigilar);
     })();
 
-    // Sincroniza la cámara: al girar una, la otra copia el ángulo.
+    // Al girar una, la otra copia el ángulo.
     let sync = true;
-    const btn = document.getElementById('btnSync');
-    btn.addEventListener('click', () => { sync = !sync; btn.setAttribute('aria-pressed', String(sync)); });
+    const btnSync = document.getElementById('btnSync');
+    btnSync.addEventListener('click', () => { sync = !sync; btnSync.setAttribute('aria-pressed', String(sync)); });
     visores.forEach(({ mv }, i) => {
       mv.addEventListener('camera-change', (e) => {
         if (!sync || e.detail.source !== 'user-interaction') return;

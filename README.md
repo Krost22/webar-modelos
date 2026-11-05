@@ -14,6 +14,12 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 | Champeta (picó + bailarines) | este repo, piso 18 | baile en bucle de 8.3 s | 5.4 MB |
 | Gaitero | este repo, piso 10 | bucle de 2.7 s (gaita) | 1.3 MB |
 
+## La vitrina
+
+`index.html` muestra un modelo a la vez: su nombre, el botón **Ver en tu espacio**, la historia
+narrada (ES/EN/PT cuando existe) y la música, con una tira de miniaturas para pasar al siguiente.
+La URL cambia a `index.html?m=<id>` para compartir. Los QR antiguos (`ver.html?m=<id>`) redirigen aquí.
+
 ## Audio y animación en AR
 
 - **Android (Chrome con ARCore):** la AR se abre dentro de la página (WebXR). Al colocar el modelo
@@ -22,23 +28,25 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
   se ofrece "Abrir en Chrome".
 - **iPhone/iPad (Quick Look):** cada modelo tiene un `.usdz` por idioma (`models/<id>-<es|en|pt>.usdz`)
   con la narración incluida: al colocar el modelo se reproduce la animación en bucle y la narración.
+  La vitrina descarga el `.usdz` en segundo plano apenas carga el modelo (un anillo en el botón
+  muestra el avance), así Quick Look abre sin espera. El banner de Quick Look trae el botón
+  **Siguiente: <modelo>**, que cierra la AR y pasa al siguiente modelo (`assets/quicklook.js`).
   Se generan con `herramientas/conversion/usdz_con_audio.py`.
 
 ## Páginas
 
-- `index.html` — galería con todos los modelos y su QR.
-- `ver.html?m=<id>` — visor de un modelo: 3D, botón **Ver en tu espacio (AR)**, narración
-  (ES/EN/PT en los modelos de EM Hotels) y música o efectos cuando los había en Unity.
+- `index.html` — la vitrina con todos los modelos.
+- `ver.html?m=<id>` — redirección a la vitrina, para los QR ya impresos.
 - `comparar.html` — las dos India Catalina lado a lado, con la cámara sincronizada.
-- `qr.html` — hoja imprimible con un QR por modelo (más uno para la comparación y otro para la galería).
+- `qr.html` — hoja imprimible con un QR por modelo (más uno para la comparación y otro para la vitrina).
 
-Ids: `india-catalina-em`, `india-catalina-ic`, `torre-del-reloj`, `castillo-san-felipe`,
+Ids: `torre-del-reloj`, `castillo-san-felipe`, `india-catalina-em`, `india-catalina-ic`,
 `champeta-pico`, `gaitero`.
 
 ## Probar en el computador
 
 ```bash
-node WebAR-Modelos/herramientas/servidor.mjs 8080
+node herramientas/servidor.mjs 8080
 ```
 
 Abre `http://localhost:8080/`. En el computador se ve en 3D; la AR necesita un celular.
@@ -82,3 +90,30 @@ Notas de la conversión:
   cada segundo y el minutero/horario marcan 10:10.
 - Los tamaños se normalizaron para AR: personajes a 1.75 m, la India del pedestal a 3.2 m en total,
   monumentos como maqueta de 0.9 m. En AR se pueden escalar con los dedos.
+
+## Aligerar los USDZ para iPhone
+
+Sin volver a Unity, sobre los USDZ ya generados (Blender 5.x en consola):
+
+```bash
+# Quita texturas duplicadas, reduce las grandes y verifica con ARKit (solo reemplaza el archivo
+# si no aparece una falla nueva respecto al original):
+blender -b --factory-startup --python herramientas/conversion/usdz_dieta.py -- models --submuestrear champeta-pico --color champeta-pico=1024
+
+# Champeta: menos triángulos en los bailarines (desde el GLB) y de nuevo con la narración, por idioma:
+blender -b --factory-startup --python herramientas/conversion/reducir_malla.py -- models/champeta-pico.glb base.usdz 0.35 30
+blender -b --factory-startup --python herramientas/conversion/usdz_con_audio.py -- base.usdz audio/champeta-es.mp3 models/champeta-pico-es.usdz trabajo-es
+```
+
+Ojo: la dieta reduce texturas cada vez que se corre sobre archivos nuevos; sobre los ya aligerados
+no cambia nada, salvo `--submuestrear`, que vuelve a quitar muestras (úsalo solo con la champeta
+recién reconstruida).
+
+| USDZ (ES) | Antes | Después |
+|---|---|---|
+| champeta-pico | 12,5 MB | 7,8 MB |
+| india-catalina-ic | 9,4 MB | 7,1 MB |
+| castillo-san-felipe | 7,9 MB | 5,2 MB |
+| torre-del-reloj | 5,4 MB | 3,2 MB |
+| india-catalina-em | 4,1 MB | 3,1 MB |
+| gaitero | 3,0 MB | 3,0 MB |

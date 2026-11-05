@@ -2,175 +2,85 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cartagena en AR</title>
-  <meta name="description" content="Modelos 3D de Cartagena en realidad aumentada, con acceso por código QR">
-  <meta name="theme-color" content="#fbf7ef">
+  <meta name="description" content="Monumentos y personajes de Cartagena en 3D. Míralos en tu espacio con realidad aumentada, sin descargar nada.">
+  <meta name="theme-color" content="#070B12">
+  <meta name="color-scheme" content="dark">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/estilos.css">
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
-<body>
-  <header class="portada">
-    <div class="lado-texto">
-      <div class="marca">
-        <span class="etiqueta-sup">Cartagena · Realidad aumentada</span>
-        <nav>
-          <a href="#sala-india">India Catalina</a>
-          <a href="#sala-monumentos">Monumentos</a>
-          <a href="#sala-cultura">Cultura</a>
-          <a href="qr.html">Códigos QR</a>
-        </nav>
-      </div>
-      <h1>La ciudad, <em>en tu&nbsp;espacio</em>.</h1>
-      <p class="intro">Monumentos y personajes de Cartagena en 3D, con sus animaciones y su historia narrada. Escanea un código QR y colócalos frente a ti con la cámara del celular.</p>
-      <div class="acciones">
-        <a class="btn btn-primario" href="ver.html?m=torre-del-reloj">Ver la Torre del Reloj en AR</a>
-        <a class="btn" href="#sala-india">Recorrer la colección</a>
-      </div>
-      <div class="escenario-portada">
-        <div class="foco"></div>
-        <model-viewer src="models/torre-del-reloj.glb" poster="posters/torre-del-reloj.webp" alt="Torre del Reloj de Cartagena en 3D"
-          auto-rotate auto-rotate-delay="0" rotation-per-second="12deg" camera-orbit="30deg 68deg auto" autoplay
-          interaction-prompt="none" disable-zoom disable-pan touch-action="pan-y" camera-controls
-          shadow-intensity="1" exposure="1.05" environment-image="neutral"></model-viewer>
-      </div>
-    </div>
-    <div class="lado-piedra">
-      <div class="celular" aria-hidden="true">
-        <div class="pantalla">
-          <img src="posters/india-catalina-em.webp" alt="">
-          <div class="pie-cel">
-            <strong>India Catalina</strong>
-            <span>Versión EM Hotels · narración ES/EN/PT</span>
-            <div class="boton-cel">Ver en tu espacio (AR)</div>
-          </div>
-        </div>
-        <div class="qr-flotante" id="qrPortada"></div>
-        <div class="escanea">Escanéame</div>
-      </div>
+<body class="vitrina">
+  <header class="barra">
+    <a class="marca" href="./">Cartagena <em>en AR</em></a>
+    <div class="barra__acciones">
+      <div class="idiomas" id="idiomas" role="group" aria-label="Idioma de la historia" hidden></div>
+      <a class="enlace solo-escritorio" href="qr.html">Códigos QR</a>
     </div>
   </header>
 
-  <main class="contenedor">
-    <section class="sala" id="sala-india">
-      <div class="cabeza-sala">
-        <span class="numero">01</span>
-        <h2>India Catalina, dos versiones</h2>
-        <p>La misma figura hecha en los dos proyectos. Mírala lado a lado y decide cuál se ve mejor.</p>
-      </div>
-      <div class="banda-comparar">
-        <div class="pieza"><img src="posters/india-catalina-em.webp" alt="India Catalina, versión EM Hotels"></div>
-        <div class="pieza"><img src="posters/india-catalina-ic.webp" alt="India Catalina, versión AR-IndiaCatalina"></div>
-        <div class="placa">
-          <span class="etiqueta-sup">Comparación</span>
-          <h3>Dorada y animada, o bronce sobre su pedestal</h3>
-          <p>Gira una y la otra la sigue. Cada una tiene su botón de AR y su ficha técnica.</p>
-          <div><a class="btn btn-primario" href="comparar.html">Comparar lado a lado</a></div>
+  <main class="escena">
+    <div class="escenario">
+      <div class="foco" aria-hidden="true"></div>
+      <!-- Android: AR dentro de la página (WebXR). iPhone/iPad: Quick Look con assets/quicklook.js. -->
+      <model-viewer id="mv" camera-controls disable-pan disable-zoom touch-action="pan-y"
+        interaction-prompt="none" auto-rotate auto-rotate-delay="2500" rotation-per-second="14deg"
+        autoplay ar ar-modes="webxr" ar-placement="floor" ar-scale="auto"
+        shadow-intensity="1.1" shadow-softness="0.9" exposure="1" environment-image="neutral"
+        loading="eager" alt="">
+        <span slot="ar-button" hidden></span>
+        <span slot="progress-bar" hidden></span>
+        <!-- Solo se ven durante la AR en Android (WebXR) -->
+        <div class="ar-ayuda" id="arAyuda">Apunta al piso y toca para colocarlo</div>
+        <div class="ar-controles" id="arControles">
+          <button class="pildora" id="arHistoria" type="button">■ Detener historia</button>
+          <button class="pildora" id="arMusica" type="button" aria-pressed="false" hidden>♪ Música</button>
         </div>
+      </model-viewer>
+      <div class="cargando" id="cargando" aria-hidden="true"><i id="cargandoBarra"></i></div>
+    </div>
+
+    <section class="ficha" aria-live="polite">
+      <span class="etiqueta"><span class="contador" id="contador"></span> · <span id="grupo"></span></span>
+      <h1 class="nombre" id="nombre"><span></span></h1>
+      <p class="variante" id="variante"></p>
+      <div class="acciones">
+        <button class="btn btn--coral" id="btnAr" type="button">
+          <span class="btn__tinta" aria-hidden="true"></span>
+          <span id="btnArTexto">Ver en tu espacio</span>
+          <svg class="anillo" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="8" class="anillo__fondo"/>
+            <circle cx="10" cy="10" r="8" class="anillo__avance" id="anillo" pathLength="1"/>
+          </svg>
+        </button>
+        <button class="btn btn--sutil" id="btnHistoria" type="button" hidden>
+          <span class="btn__tinta" aria-hidden="true"></span>
+          <span id="btnHistoriaTexto">▶ Historia</span>
+        </button>
+        <button class="btn btn--sutil btn--icono" id="btnMusica" type="button" aria-pressed="false" aria-label="Música" hidden>
+          <span class="btn__tinta" aria-hidden="true"></span>♪
+        </button>
       </div>
-      <div class="rejilla" id="g-india" style="margin-top:18px"></div>
+      <p class="aviso" id="aviso" hidden></p>
+      <a class="enlace" id="enlaceComparar" href="comparar.html" hidden>Comparar las dos versiones →</a>
     </section>
 
-    <section class="sala" id="sala-monumentos">
-      <div class="cabeza-sala">
-        <span class="numero">02</span>
-        <h2>Monumentos</h2>
-        <p>La Puerta del Reloj con su puente levadizo y el Castillo San Felipe, con su narración original.</p>
-      </div>
-      <div class="rejilla" id="g-monumento"></div>
-    </section>
+    <nav class="tira" aria-label="Modelos">
+      <button class="flecha" id="anterior" type="button" aria-label="Modelo anterior">‹</button>
+      <div class="miniaturas" id="miniaturas"></div>
+      <button class="flecha" id="siguiente" type="button" aria-label="Modelo siguiente">›</button>
+    </nav>
 
-    <section class="sala" id="sala-cultura">
-      <div class="cabeza-sala">
-        <span class="numero">03</span>
-        <h2>Cultura del Caribe</h2>
-        <p>La champeta y el gaitero, con narración en español, inglés y portugués y su música.</p>
-      </div>
-      <div class="rejilla" id="g-cultura"></div>
-    </section>
-
-    <footer class="pie-pagina">
-      <span>AR en Android (Chrome) y iPhone/iPad (Safari). En computador se ve en 3D.</span>
-      <a href="qr.html">Hoja de códigos QR para imprimir →</a>
-    </footer>
+    <aside class="tarjeta-qr solo-escritorio" id="tarjetaQr">
+      <div class="tarjeta-qr__codigo" id="qr"></div>
+      <p>Escanéalo y míralo en tu espacio</p>
+    </aside>
   </main>
 
-  <dialog class="modal" id="modalQr">
-    <h2 id="modalTitulo"></h2>
-    <p>Escanéalo con la cámara del celular.</p>
-    <div class="qr" id="modalCodigo"></div>
-    <div class="url" id="modalUrl"></div>
-    <div class="fila">
-      <button class="btn" id="btnDescargarQr" type="button">Descargar PNG</button>
-      <button class="btn btn-primario" id="btnCerrarQr" type="button">Cerrar</button>
-    </div>
-  </dialog>
-
-  <script type="module">
-    import { MODELOS } from './assets/modelos.js';
-    import { qrSvg, descargarQrPng } from './assets/qr.js';
-
-    const $ = (id) => document.getElementById(id);
-    let actual = null;
-
-    $('qrPortada').innerHTML = qrSvg(new URL('ver.html?m=india-catalina-em', location.href).href, 'India Catalina');
-
-    const conMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-    for (const m of MODELOS) {
-      const url = `ver.html?m=${m.id}`;
-      const art = document.createElement('article');
-      art.className = 'tarjeta';
-      art.innerHTML = `
-        <a class="imagen" href="${url}" aria-label="Ver ${m.nombre} – ${m.variante}"><img src="${m.poster}" alt="${m.nombre} – ${m.variante}" loading="lazy"></a>
-        <div class="cuerpo">
-          <span class="chip ${m.origen.startsWith('AR-IndiaCatalina') ? '' : 'ocre'}">${m.origen}</span>
-          <h3>${m.nombre}</h3>
-          <div class="variante">${m.variante}</div>
-          <div class="pie">
-            <a class="btn btn-primario" href="${url}">Ver en 3D / AR</a>
-            <button class="btn" type="button" data-qr="${m.id}">QR</button>
-          </div>
-        </div>`;
-      $(`g-${m.grupo}`).append(art);
-
-      // En computador, la vitrina muestra el modelo en 3D girando al pasar el mouse.
-      if (conMouse) {
-        const caja = art.querySelector('.imagen');
-        art.addEventListener('mouseenter', () => {
-          let mv = caja.querySelector('model-viewer');
-          if (!mv) {
-            mv = document.createElement('model-viewer');
-            Object.assign(mv, { src: m.glb, alt: m.nombre });
-            for (const [k, v] of Object.entries({ 'auto-rotate': '', 'auto-rotate-delay': '0', 'rotation-per-second': '30deg', autoplay: '',
-              'interaction-prompt': 'none', 'environment-image': 'neutral', 'shadow-intensity': '1', 'camera-orbit': m.camara || '' })) mv.setAttribute(k, v);
-            mv.addEventListener('load', () => mv.classList.add('visible'));
-            caja.append(mv);
-          } else {
-            mv.classList.add('visible');
-            mv.play?.();
-          }
-        });
-        art.addEventListener('mouseleave', () => caja.querySelector('model-viewer')?.classList.remove('visible'));
-      }
-    }
-
-    document.addEventListener('click', (e) => {
-      const id = e.target.closest('[data-qr]')?.dataset.qr;
-      if (!id) return;
-      const m = MODELOS.find((x) => x.id === id);
-      actual = { url: new URL(`ver.html?m=${id}`, location.href).href, id };
-      $('modalTitulo').textContent = `${m.nombre} – ${m.variante}`;
-      $('modalCodigo').innerHTML = qrSvg(actual.url, m.nombre);
-      $('modalUrl').textContent = actual.url;
-      $('modalQr').showModal();
-    });
-    $('btnCerrarQr').addEventListener('click', () => $('modalQr').close());
-    $('btnDescargarQr').addEventListener('click', () => actual && descargarQrPng(actual.url, `qr-${actual.id}.png`));
-  </script>
+  <script type="module" src="assets/vitrina.js"></script>
 </body>
 </html>
