@@ -59,12 +59,9 @@ export const MODELOS = [
     glb: 'models/india-catalina-ic.glb',
     poster: 'posters/india-catalina-ic.webp',
     descripcion:
-      'Estatua de bronce sobre su pedestal. Alza los brazos mientras el casco colonial y la tiara aparecen y levitan, como en la línea de tiempo original.',
+      'Estatua de bronce sobre su pedestal. Respira, se balancea con calma y ofrece la mano derecha en señal de bienvenida.',
     narracion: { es: 'audio/india-ic-es.mp3' },
-    // Introducción 0–8.08 s; después repite el tramo de levitación (8.08–11.08 s).
-    bucle: { inicio: 8.083, fin: 11.083 },
-    sincronizar: true,
-    stats: { mb: 5.64, tris: 60862, texturas: 8, anim: 'Intro de 8 s + levitación en bucle (Timeline)' },
+    stats: { mb: 5.43, tris: 57054, texturas: 8, anim: 'Bucle de 10 s: respiración y gesto de bienvenida' },
     camara: '20deg 78deg auto',
   },
   {

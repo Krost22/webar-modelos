@@ -8,7 +8,7 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 | Modelo | Origen | Animación | Peso GLB |
 |---|---|---|---|
 | India Catalina (versión EM Hotels) | este repo, piso 10 | bucle de 8 s del FBX | 1.6 MB |
-| India Catalina (versión AR-IndiaCatalina) | [Krost22/AR-IndiaCatalina](https://github.com/Krost22/AR-IndiaCatalina) | Timeline: brazos + casco/tiara que aparecen y levitan | 5.6 MB |
+| India Catalina (versión AR-IndiaCatalina) | [Krost22/AR-IndiaCatalina](https://github.com/Krost22/AR-IndiaCatalina) | bucle de 10 s hecho con sus huesos: respira, se balancea y ofrece la mano (`herramientas/conversion/animar_india.py`) | 5.4 MB |
 | Torre del Reloj | AR-IndiaCatalina | Timeline: puente levadizo (10–15 s) + segunderos | 4.6 MB |
 | Castillo San Felipe | AR-IndiaCatalina | estático (en Unity el clip de cañones solo disparaba humo y sonido) | 6.2 MB |
 | Champeta (picó + bailarines) | este repo, piso 18 | baile en bucle de 8.3 s | 5.4 MB |
@@ -105,6 +105,15 @@ blender -b --factory-startup --python herramientas/conversion/reducir_malla.py -
 blender -b --factory-startup --python herramientas/conversion/usdz_con_audio.py -- base.usdz audio/champeta-es.mp3 models/champeta-pico-es.usdz trabajo-es
 ```
 
+India Catalina de bronce: su animación se hace con sus huesos (sin el casco y la tiara que
+levitaban). Genera el GLB y el USDZ base; luego se le pone la narración y se aligera:
+
+```bash
+blender -b --factory-startup --python herramientas/conversion/animar_india.py -- models/india-catalina-ic.glb nueva.glb base.usdz imagenes
+blender -b --factory-startup --python herramientas/conversion/usdz_con_audio.py -- base.usdz audio/india-ic-es.mp3 models/india-catalina-ic-es.usdz trabajo
+blender -b --factory-startup --python herramientas/conversion/usdz_dieta.py -- models --solo india-catalina-ic
+```
+
 Ojo: la dieta reduce texturas cada vez que se corre sobre archivos nuevos; sobre los ya aligerados
 no cambia nada, salvo `--submuestrear`, que vuelve a quitar muestras (úsalo solo con la champeta
 recién reconstruida).
@@ -112,7 +121,7 @@ recién reconstruida).
 | USDZ (ES) | Antes | Después |
 |---|---|---|
 | champeta-pico | 12,5 MB | 7,8 MB |
-| india-catalina-ic | 9,4 MB | 7,1 MB |
+| india-catalina-ic | 9,4 MB | 6,9 MB |
 | castillo-san-felipe | 7,9 MB | 5,2 MB |
 | torre-del-reloj | 5,4 MB | 3,2 MB |
 | india-catalina-em | 4,1 MB | 3,1 MB |
