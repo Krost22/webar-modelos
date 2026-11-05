@@ -1,7 +1,7 @@
 // Vitrina: un modelo a la vez, con su botón de AR, su historia narrada y una tira de miniaturas.
 import { MODELOS, GRUPOS, IDIOMAS, usdzDe, esIOS, esAndroid, enAppExterna, enlaceChrome } from './modelos.js';
 import { soportaQuickLook, precargar, abrirQuickLook } from './quicklook.js';
-import { SueloQR } from './sueloqr.js';
+import { QRDelModelo } from './qrmodelo.js';
 
 const $ = (id) => document.getElementById(id);
 const mv = $('mv');
@@ -18,9 +18,9 @@ let modelo = MODELOS[indice];
 let idioma = idiomaInicial();
 let audio = null; // estado de sonido del modelo actual
 
-/* ---------------------------------------------------------------- Suelo QR */
-// La plaza bajo cada modelo es su código QR: el botón QR pasa del modelo al código y vuelve.
-const suelo = new SueloQR($('sueloQr'), mv);
+/* ---------------------------------------------------------------- QR escondido en el modelo */
+// El botón QR descompone el modelo en cubos de sus colores que forman su código QR, y vuelve.
+const suelo = new QRDelModelo($('lienzoQr'), mv);
 // Sin límites de distancia ni de ángulo: la cámara debe poder alejarse y mirar desde arriba.
 mv.minCameraOrbit = 'auto 0deg 0m';
 mv.maxCameraOrbit = 'auto 180deg 1000m';
@@ -199,17 +199,10 @@ mv.addEventListener('progress', (e) => {
 });
 
 mv.addEventListener('load', () => {
-  // Primero se levanta la plaza QR y luego aparece el modelo sobre ella.
+  // Prepara el QR escondido en el modelo (las celdas bajo él, todavía invisibles).
   suelo.configurar({ texto: urlModelo(modelo), grupo: modelo.grupo });
-  const encuadre = suelo.encuadre();
-  // Vista de isla, un poco desde arriba, para que se lea la plaza QR bajo el modelo.
-  const [theta, phi] = (modelo.camara || '20deg 62deg auto').split(' ');
-  const inclinacion = Math.min(parseFloat(phi) || 62, 62);
-  mv.fieldOfView = `${encuadre.fov}deg`;
-  mv.cameraOrbit = `${theta} ${inclinacion}deg ${encuadre.radius}m`;
-  mv.jumpCameraToGoal();
-  setTimeout(() => mv.classList.remove('cambiando'), 350);
-  if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.mostrarQR(), 500); }
+  setTimeout(() => mv.classList.remove('cambiando'), 120);
+  if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.mostrarQR(), 900); }
   if (mv.availableAnimations.length) {
     mv.animationName = mv.availableAnimations[0];
     mv.currentTime = 0;

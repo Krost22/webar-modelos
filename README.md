@@ -20,11 +20,12 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 narrada (ES/EN/PT cuando existe) y la música, con una tira de miniaturas para pasar al siguiente.
 La URL cambia a `index.html?m=<id>` para compartir. Los QR antiguos (`ver.html?m=<id>`) redirigen aquí.
 
-Cada modelo se apoya sobre una plaza de baldosas que es su propio código QR (`assets/sueloqr.js`).
-El botón QR sube la cámara a vista cenital, desvanece el modelo y aplana las baldosas hasta formar
-un QR escaneable que abre `ver.html?m=<id>`; al tocarlo, el QR se vuelve a levantar y reaparece el
-modelo. El suelo se dibuja con three.js en un lienzo propio detrás de `<model-viewer>`, copiando su
-cámara cuadro a cuadro, así que la AR y las animaciones siguen siendo las de model-viewer.
+Cada modelo esconde su propio código QR (`assets/qrmodelo.js`). El botón QR descompone el modelo
+en cubos con sus colores (tomados de su geometría y sus texturas, en la pose del momento), los cubos
+vuelan a formar el QR y la cámara sube a vista cenital; el QR abre `ver.html?m=<id>`. Al tocarlo,
+el QR se rearma en el modelo. Los cubos se dibujan con three.js en un lienzo propio detrás de
+`<model-viewer>`, copiando su cámara cuadro a cuadro; la geometría se lee de la escena interna de
+model-viewer 4.4, así que la AR y las animaciones siguen siendo las de model-viewer.
 
 ## Audio y animación en AR
 
@@ -120,6 +121,15 @@ blender -b --factory-startup --python herramientas/conversion/usdz_con_audio.py 
 blender -b --factory-startup --python herramientas/conversion/usdz_dieta.py -- models --solo india-catalina-ic
 ```
 
+Torre del Reloj: el foso bajo el puente tiene agua (un plano a z = 0,065 que el terreno tapa en
+las orillas). Se agrega sobre el GLB publicado, conservando la animación del puente y los relojes:
+
+```bash
+blender -b --factory-startup --python herramientas/conversion/agua_torre.py -- models/torre-del-reloj.glb nueva.glb base.usdz
+blender -b --factory-startup --python herramientas/conversion/usdz_con_audio.py -- base.usdz audio/torre-es.mp3 models/torre-del-reloj-es.usdz trabajo
+blender -b --factory-startup --python herramientas/conversion/usdz_dieta.py -- models --solo torre-del-reloj
+```
+
 Ojo: la dieta reduce texturas cada vez que se corre sobre archivos nuevos; sobre los ya aligerados
 no cambia nada, salvo `--submuestrear`, que vuelve a quitar muestras (úsalo solo con la champeta
 recién reconstruida).
@@ -129,6 +139,6 @@ recién reconstruida).
 | champeta-pico | 12,5 MB | 7,8 MB |
 | india-catalina-ic | 9,4 MB | 6,9 MB |
 | castillo-san-felipe | 7,9 MB | 5,2 MB |
-| torre-del-reloj | 5,4 MB | 3,2 MB |
+| torre-del-reloj | 5,4 MB | 3,7 MB (con el agua del foso) |
 | india-catalina-em | 4,1 MB | 3,1 MB |
 | gaitero | 3,0 MB | 3,0 MB |
