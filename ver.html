@@ -5,8 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#070B12">
   <title>Cartagena en AR</title>
-  <!-- Los QR impresos apuntan a ver.html?m=<id>: ahora todo vive en la vitrina. -->
-  <script>location.replace('index.html' + location.search + location.hash);</script>
+  <!-- Los QR (impresos y los del modelo) apuntan a ver.html?m=<id>: abren la vitrina en ese modelo
+       y lanzan su AR de una vez (ar=1). Al salir de la AR queda la página del modelo. -->
+  <script>
+    var q = new URLSearchParams(location.search);
+    q.set('ar', '1');
+    location.replace('index.html?' + q.toString() + location.hash);
+  </script>
   <noscript><meta http-equiv="refresh" content="0; url=index.html"></noscript>
 </head>
 <body style="background:#070B12"></body>

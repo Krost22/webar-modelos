@@ -426,3 +426,22 @@ body.hoja-qr { min-height: 100dvh; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+/* ---------------------------------------------------------------- Llegada por QR: AR de un toque */
+.arranque {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  padding: max(16px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background: radial-gradient(120% 70% at 50% 38%, #1a2230 0%, var(--noche) 70%);
+  color: var(--pergamino); cursor: pointer;
+  animation: arranque-entra 0.5s ease both;
+}
+.arranque[hidden] { display: none !important; }
+.arranque__poster { width: 100%; height: 100%; min-height: 0; object-fit: contain; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.55)); }
+.arranque__pie { display: grid; justify-items: center; gap: 12px; text-align: center; }
+.arranque__nombre { margin: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(38px, 11vw, 64px); line-height: 0.95; }
+.arranque__btn { width: min(100%, 340px); justify-content: center; animation: arranque-pulso 2.2s ease-in-out infinite; }
+.arranque__btn[disabled] { opacity: 0.6; animation: none; }
+.arranque__salir { background: none; border: 0; border-bottom: 1px solid transparent; padding: 6px 2px; cursor: pointer; font: inherit; font-size: 14px; }
+@keyframes arranque-entra { from { opacity: 0; } }
+@keyframes arranque-pulso { 50% { box-shadow: 0 0 0 10px rgba(242, 105, 78, 0); } 0%, 100% { box-shadow: 0 0 0 0 rgba(242, 105, 78, 0.45); } }

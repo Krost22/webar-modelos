@@ -84,6 +84,20 @@
 
   </main>
 
+  <!-- Al llegar por un QR: la AR del modelo se abre sola; si el teléfono pide un toque, basta tocar aquí. -->
+  <div class="arranque" id="arranque" role="dialog" aria-modal="true" aria-labelledby="arranqueNombre" hidden>
+    <img class="arranque__poster" id="arranquePoster" alt="">
+    <div class="arranque__pie">
+      <span class="etiqueta">Cartagena en AR</span>
+      <h2 class="arranque__nombre" id="arranqueNombre"></h2>
+      <button class="btn btn--coral arranque__btn" id="arranqueBtn" type="button">
+        <span class="btn__tinta" aria-hidden="true"></span>
+        <span id="arranqueTexto">Toca para verlo en tu espacio</span>
+      </button>
+      <button class="enlace arranque__salir" id="arranqueSalir" type="button">Ver la página</button>
+    </div>
+  </div>
+
   <script type="module" src="assets/vitrina.js"></script>
 </body>
 </html>

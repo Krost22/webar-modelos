@@ -45,7 +45,10 @@ model-viewer 4.4, así que la AR y las animaciones siguen siendo las de model-vi
 ## Páginas
 
 - `index.html` — la vitrina con todos los modelos.
-- `ver.html?m=<id>` — redirección a la vitrina, para los QR ya impresos.
+- `ver.html?m=<id>` — a donde apuntan todos los QR (los impresos y los del modelo): abre la vitrina
+  en ese modelo con `ar=1` y lanza su AR de una vez. En iPhone, Quick Look se abre solo (si Safari
+  pide un toque, aparece una pantalla de un toque); en Android, Chrome exige un toque para empezar
+  la AR, así que toda la pantalla es el botón. Al salir de la AR queda la página del modelo.
 - `comparar.html` — las dos India Catalina lado a lado, con la cámara sincronizada.
 - `qr.html` — hoja imprimible con un QR por modelo (más uno para la comparación y otro para la vitrina).
 

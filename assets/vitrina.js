@@ -135,6 +135,7 @@ function actualizarUrl() {
   u.searchParams.set('m', modelo.id);
   if (idiomaDe(modelo) !== 'es') u.searchParams.set('lang', idiomaDe(modelo));
   else u.searchParams.delete('lang');
+  u.searchParams.delete('ar'); // la AR directa del QR solo se lanza una vez, no al recargar
   history.replaceState(null, '', u);
 }
 
@@ -194,6 +195,7 @@ function mostrar(primera) {
 
 mv.addEventListener('progress', (e) => {
   const p = e.detail.totalProgress;
+  if (esperaModelo()) $('arranqueTexto').textContent = `Preparando… ${Math.round(p * 100)}%`;
   $('cargandoBarra').style.width = `${Math.round(p * 100)}%`;
   $('cargandoBarra').style.opacity = p >= 1 ? '0' : '1';
 });
@@ -327,6 +329,15 @@ function revisarAr() {
     avisar('Este celular no permite realidad aumentada, pero puedes girar el modelo aquí.');
   }
   $('arMusica').hidden = !modelo.musica;
+  // Llegada por QR en Chrome Android: el toque para la AR se habilita cuando el modelo está listo.
+  if (esperaModelo()) {
+    if (mv.canActivateAR) {
+      $('arranqueBtn').disabled = false;
+      $('arranqueTexto').textContent = 'Toca para verlo en tu espacio';
+    } else {
+      cerrarArranque();
+    }
+  }
 }
 
 // iPhone: descarga el USDZ en segundo plano para que Quick Look abra al instante.
@@ -341,8 +352,9 @@ function prepararQuickLook() {
     .catch(() => { if (modelo.id === id) btn.removeAttribute('data-precarga'); });
 }
 
-$('btnAr').addEventListener('click', () => {
-  tic();
+$('btnAr').addEventListener('click', () => { tic(); abrirAr(); });
+
+function abrirAr() {
   if (conQuickLook) {
     detenerSonido(); // el USDZ ya trae la narración
     const siguiente = MODELOS[(indice + 1) % MODELOS.length];
@@ -358,8 +370,58 @@ $('btnAr').addEventListener('click', () => {
   } else if (esEscritorio) {
     suelo.mostrarQR(); // en el computador, el QR de la plaza lleva el modelo al teléfono
   } else if (esAndroid && !enChromeAndroid) {
-    location.href = enlaceChrome();
+    // En Chrome se abre de nuevo directo a la AR de este modelo.
+    const u = new URL(location.href);
+    u.searchParams.set('ar', '1');
+    location.href = enlaceChrome(u.href);
   }
+}
+
+/* ---------------------------------------------------------------- Llegada por QR: AR directa */
+// Los QR apuntan a ver.html?m=<id>, que llega aquí con ar=1: se abre la AR de ese modelo de una
+// vez y, al salir de ella, queda su página. iPhone: Quick Look se lanza solo (si Safari pide un
+// toque, queda la pantalla para tocar). Android: Chrome exige un toque para empezar la AR, así que
+// toda la pantalla es el botón.
+const arranque = $('arranque');
+const pideAr = params.get('ar') === '1' && !esEscritorio;
+
+function esperaModelo() {
+  return !arranque.hidden && enChromeAndroid && !conQuickLook;
+}
+
+function cerrarArranque() {
+  arranque.hidden = true;
+}
+
+function prepararArranque() {
+  if (!pideAr || (!conQuickLook && !esAndroid) || enAppExterna) return;
+  $('arranquePoster').src = modelo.poster;
+  $('arranquePoster').alt = modelo.nombre;
+  $('arranqueNombre').textContent = modelo.nombre;
+  arranque.hidden = false;
+  if (conQuickLook) {
+    let salio = false;
+    const marcar = () => { salio = true; };
+    addEventListener('blur', marcar, { once: true });
+    addEventListener('pagehide', marcar, { once: true });
+    document.addEventListener('visibilitychange', marcar, { once: true });
+    abrirAr();
+    // Si Quick Look se abrió, al volver ya está la página; si no, queda el botón de un toque.
+    setTimeout(() => { if (salio) cerrarArranque(); }, 1200);
+  } else if (!enChromeAndroid) {
+    $('arranqueTexto').textContent = 'Toca para abrirlo en Chrome';
+  } else {
+    $('arranqueBtn').disabled = true;
+    $('arranqueTexto').textContent = 'Preparando…';
+  }
+}
+
+arranque.addEventListener('click', (e) => {
+  if (e.target.closest('#arranqueSalir')) { cerrarArranque(); return; }
+  if ($('arranqueBtn').disabled) return;
+  tic();
+  cerrarArranque();
+  abrirAr();
 });
 
 // Android (WebXR): la historia arranca cuando se coloca el modelo y se detiene al salir.
@@ -374,3 +436,4 @@ mv.addEventListener('ar-status', (e) => {
 });
 
 mostrar(true);
+prepararArranque();
