@@ -1,10 +1,11 @@
 // Vitrina: un modelo a la vez, con su botón de AR, su historia narrada y una tira de miniaturas.
 import { MODELOS, GRUPOS, IDIOMAS, usdzDe, esIOS, esAndroid, enAppExterna, enlaceChrome } from './modelos.js';
-import { qrSvg } from './qr.js';
 import { soportaQuickLook, precargar, abrirQuickLook } from './quicklook.js';
+import { SueloQR } from './sueloqr.js';
 
 const $ = (id) => document.getElementById(id);
 const mv = $('mv');
+const escenario = mv.closest('.escenario');
 const params = new URLSearchParams(location.search);
 const esEscritorio = !esIOS && !esAndroid && matchMedia('(hover: hover) and (pointer: fine)').matches;
 const conQuickLook = esIOS && soportaQuickLook();
@@ -16,6 +17,25 @@ let indice = Math.max(0, MODELOS.findIndex((m) => m.id === params.get('m')));
 let modelo = MODELOS[indice];
 let idioma = idiomaInicial();
 let audio = null; // estado de sonido del modelo actual
+
+/* ---------------------------------------------------------------- Suelo QR */
+// La plaza bajo cada modelo es su código QR: el botón QR pasa del modelo al código y vuelve.
+const suelo = new SueloQR($('sueloQr'), mv);
+// Sin límites de distancia ni de ángulo: la cámara debe poder alejarse y mirar desde arriba.
+mv.minCameraOrbit = 'auto 0deg 0m';
+mv.maxCameraOrbit = 'auto 180deg 1000m';
+let qrTrasCarga = false;
+const urlModelo = (m) => new URL(`ver.html?m=${m.id}`, location.href).href;
+suelo.alCambiar = (enQR) => {
+  $('btnQr').setAttribute('aria-pressed', String(enQR));
+  escenario.classList.toggle('en-qr', enQR);
+  $('leyendaQr').textContent = esEscritorio
+    ? 'Escanéalo con tu teléfono · Toca para volver'
+    : 'Escanéalo con otro teléfono · Toca para volver';
+};
+$('btnQr').addEventListener('click', () => { tic(); suelo.alternar(); });
+escenario.addEventListener('click', () => { if (suelo.enQR && !suelo.anim) suelo.mostrarModelo(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && suelo.enQR) suelo.mostrarModelo(); });
 
 /* ---------------------------------------------------------------- Respuesta táctil */
 let huboToque = false;
@@ -150,7 +170,9 @@ function mostrar(primera) {
   [...$('miniaturas').children].forEach((b, i) => b.setAttribute('aria-current', String(i === indice)));
   $('miniaturas').children[indice].scrollIntoView({ block: 'nearest', inline: 'center', behavior: primera ? 'auto' : 'smooth' });
 
-  if (esEscritorio) $('qr').innerHTML = qrSvg(new URL(`index.html?m=${modelo.id}`, location.href).href, modelo.nombre);
+  // Si se estaba viendo el QR, el modelo nuevo vuelve a mostrarse como QR cuando cargue.
+  qrTrasCarga = suelo.enQR;
+  if (qrTrasCarga) suelo.reiniciar();
   $('btnAr').removeAttribute('data-precarga');
   $('btnAr').style.removeProperty('--avance');
 
@@ -177,7 +199,17 @@ mv.addEventListener('progress', (e) => {
 });
 
 mv.addEventListener('load', () => {
-  mv.classList.remove('cambiando');
+  // Primero se levanta la plaza QR y luego aparece el modelo sobre ella.
+  suelo.configurar({ texto: urlModelo(modelo), grupo: modelo.grupo });
+  const encuadre = suelo.encuadre();
+  // Vista de isla, un poco desde arriba, para que se lea la plaza QR bajo el modelo.
+  const [theta, phi] = (modelo.camara || '20deg 62deg auto').split(' ');
+  const inclinacion = Math.min(parseFloat(phi) || 62, 62);
+  mv.fieldOfView = `${encuadre.fov}deg`;
+  mv.cameraOrbit = `${theta} ${inclinacion}deg ${encuadre.radius}m`;
+  mv.jumpCameraToGoal();
+  setTimeout(() => mv.classList.remove('cambiando'), 350);
+  if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.mostrarQR(), 500); }
   if (mv.availableAnimations.length) {
     mv.animationName = mv.availableAnimations[0];
     mv.currentTime = 0;
@@ -331,11 +363,7 @@ $('btnAr').addEventListener('click', () => {
   } else if (mv.canActivateAR) {
     mv.activateAR();
   } else if (esEscritorio) {
-    const tarjeta = $('tarjetaQr');
-    tarjeta.classList.remove('llamar');
-    void tarjeta.offsetWidth;
-    tarjeta.classList.add('llamar');
-    setTimeout(() => tarjeta.classList.remove('llamar'), 700);
+    suelo.mostrarQR(); // en el computador, el QR de la plaza lleva el modelo al teléfono
   } else if (esAndroid && !enChromeAndroid) {
     location.href = enlaceChrome();
   }

@@ -20,6 +20,12 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 narrada (ES/EN/PT cuando existe) y la música, con una tira de miniaturas para pasar al siguiente.
 La URL cambia a `index.html?m=<id>` para compartir. Los QR antiguos (`ver.html?m=<id>`) redirigen aquí.
 
+Cada modelo se apoya sobre una plaza de baldosas que es su propio código QR (`assets/sueloqr.js`).
+El botón QR sube la cámara a vista cenital, desvanece el modelo y aplana las baldosas hasta formar
+un QR escaneable que abre `ver.html?m=<id>`; al tocarlo, el QR se vuelve a levantar y reaparece el
+modelo. El suelo se dibuja con three.js en un lienzo propio detrás de `<model-viewer>`, copiando su
+cámara cuadro a cuadro, así que la AR y las animaciones siguen siendo las de model-viewer.
+
 ## Audio y animación en AR
 
 - **Android (Chrome con ARCore):** la AR se abre dentro de la página (WebXR). Al colocar el modelo
