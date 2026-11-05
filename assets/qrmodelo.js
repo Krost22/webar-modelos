@@ -1,17 +1,21 @@
 // El QR escondido en el modelo.
 // Al pedir el QR, el modelo se descompone en cubos con sus propios colores (tomados de su
-// geometría y sus texturas, en la pose del momento), los cubos vuelan a ocupar las celdas de su
-// código QR y la cámara sube a vista cenital. Al volver, el QR se rearma en el modelo.
+// geometría y sus texturas, en la pose y el giro del momento), los cubos vuelan a ocupar las celdas
+// de su código QR y la cámara sube a vista cenital. Los módulos oscuros se arman con los tonos más
+// oscuros del modelo y los claros con los más claros, ajustados lo justo para que el código se lea.
+// Al volver, el QR se rearma en el modelo tal como estaba: mientras es QR, su animación se detiene.
 //
 // Los cubos se dibujan en un lienzo propio detrás de <model-viewer>, con la cámara copiada cuadro
 // a cuadro de la suya. La geometría se lee de la escena interna de model-viewer (4.4).
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.min.js';
 
-const OSCURO = { monumento: '#24221E', india: '#2B2110', cultura: '#33140E' };
-const CLARO = '#F2EADB';
 const MARGEN = 3;          // zona de silencio del QR, en módulos
 const FOV = 30;            // grados
 const DURACION = 2600;     // ms
+// Luminosidad OKLab de los módulos: los oscuros quedan por debajo y los claros por encima
+// (contraste cercano a 7:1, como tinta sobre papel).
+const L_OSCURO = 0.36;
+const L_CLARO = 0.86;
 const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const limitar = (t) => Math.min(Math.max(t, 0), 1);
@@ -33,6 +37,44 @@ function hilbert(x, y, n = 64) {
   return d;
 }
 
+// sRGB lineal ↔ OKLab (Björn Ottosson): cambia la luminosidad sin cambiar el tono.
+function aOklab({ r, g, b }) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+  ];
+}
+
+function deOklab(L, a, b, color) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  return color.setRGB(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  );
+}
+
+// Color de un módulo: el tono del punto del modelo, oscurecido o aclarado lo justo para el contraste.
+function colorModulo(origen, oscuro) {
+  const [L, a, b] = aOklab(origen);
+  const luz = oscuro ? Math.min(L, L_OSCURO) : Math.max(L, L_CLARO);
+  const color = new THREE.Color();
+  // Si el tono no cabe en pantalla con esa luminosidad, pierde saturación poco a poco.
+  for (let k = 1; k > 0.05; k *= 0.8) {
+    deOklab(luz, a * k, b * k, color);
+    if (Math.min(color.r, color.g, color.b) > -1e-4 && Math.max(color.r, color.g, color.b) < 1 + 1e-4) {
+      return color.setRGB(limitar(color.r), limitar(color.g), limitar(color.b));
+    }
+  }
+  return deOklab(luz, 0, 0, color);
+}
+
 export class QRDelModelo {
   constructor(lienzo, mv) {
     this.lienzo = lienzo;
@@ -40,6 +82,7 @@ export class QRDelModelo {
     this.modo = 0;        // 0 = modelo, 1 = QR
     this.objetivo = 0;
     this.anim = null;
+    this.reanudar = false;
     this.alCambiar = () => {};
     this.texturas = new Map();
 
@@ -83,7 +126,7 @@ export class QRDelModelo {
   get enQR() { return this.objetivo === 1; }
 
   // Prepara el QR del modelo recién cargado: celdas en el piso, bajo el modelo.
-  configurar({ texto, grupo }) {
+  configurar({ texto }) {
     const qr = window.qrcode(0, 'M');
     qr.addData(texto, 'Byte');
     qr.make();
@@ -94,16 +137,13 @@ export class QRDelModelo {
     const lado = Math.max(dims.x, dims.z, dims.y * 0.75) * 1.25;
     const s = lado / m;
     const piso = centro.y - dims.y / 2;
-    const oscuro = new THREE.Color(OSCURO[grupo] || OSCURO.monumento);
-    const claro = new THREE.Color(CLARO);
     this.celdas = [];
     for (let r = 0; r < m; r++) {
       for (let c = 0; c < m; c++) {
         const dentro = r >= MARGEN && c >= MARGEN && r < MARGEN + n && c < MARGEN + n;
-        const negro = dentro && qr.isDark(r - MARGEN, c - MARGEN);
         this.celdas.push({
           destino: new THREE.Vector3(centro.x - lado / 2 + (c + 0.5) * s, piso + s * 0.15, centro.z - lado / 2 + (r + 0.5) * s),
-          color: negro ? oscuro : claro,
+          oscuro: dentro && qr.isDark(r - MARGEN, c - MARGEN),
           giro: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
           azar: Math.random(),
         });
@@ -118,19 +158,19 @@ export class QRDelModelo {
     this.cubos = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.material, m * m);
     this.cubos.frustumCulled = false;
     this.cubos.visible = false;
-    for (let i = 0; i < m * m; i++) this.cubos.setColorAt(i, claro);
+    for (let i = 0; i < m * m; i++) this.cubos.setColorAt(i, this.color.set(0xffffff));
     this.escena.add(this.cubos);
     this.sucio = true;
   }
 
-  // Raíz del glTF dentro de la escena interna de model-viewer (Pivot → Target → Scene).
+  // Nodos de la escena interna de model-viewer: Pivot (giro automático) → Target → glTF.
   // Se evita el resto de hijos de Target, como el plano de la sombra.
-  raizModelo() {
+  nodosModelo() {
     const sym = Object.getOwnPropertySymbols(this.mv).find((x) => x.description === 'scene');
     const escena = sym && this.mv[sym];
     let objetivo = null;
     escena?.traverse((o) => { if (!objetivo && o.name === 'Target') objetivo = o; });
-    return objetivo?.children.find((c) => c.type === 'Group') ?? objetivo;
+    return { objetivo, raiz: objetivo?.children.find((c) => c.type === 'Group') ?? objetivo };
   }
 
   pixeles(textura) {
@@ -150,12 +190,16 @@ export class QRDelModelo {
     return datos;
   }
 
-  // Toma puntos sobre la superficie del modelo (en su pose actual) con el color de su textura.
+  // Toma puntos sobre la superficie del modelo, tal como se ve ahora (pose y giro), con el color
+  // de su textura.
   muestrear(cantidad) {
-    const raiz = this.raizModelo();
+    const { objetivo, raiz } = this.nodosModelo();
     const mallas = [];
     raiz?.updateWorldMatrix(true, true);
-    const aModelo = raiz ? new THREE.Matrix4().copy(raiz.matrixWorld).invert() : new THREE.Matrix4();
+    // model-viewer gira el modelo (el Pivot, con el giro automático) alrededor del objetivo de la
+    // cámara, que deja en el origen. En el lienzo de los cubos el objetivo está en su sitio.
+    const aLienzo = new THREE.Matrix4();
+    if (objetivo) aLienzo.makeTranslation(-objetivo.position.x, -objetivo.position.y, -objetivo.position.z);
     raiz?.traverse((o) => {
       if (!o.isMesh || !o.geometry?.attributes?.position) return;
       for (let p = o; p; p = p.parent) if (!p.visible) return;
@@ -207,7 +251,7 @@ export class QRDelModelo {
       if (u + w > 1) { u = 1 - u; w = 1 - w; }
       const punto = new THREE.Vector3()
         .addScaledVector(pa, 1 - u - w).addScaledVector(pb, u).addScaledVector(pc, w)
-        .applyMatrix4(m.multiplyMatrices(aModelo, o.matrixWorld));
+        .applyMatrix4(m.multiplyMatrices(aLienzo, o.matrixWorld));
 
       const color = new THREE.Color().setRGB(mat.color?.r ?? 1, mat.color?.g ?? 1, mat.color?.b ?? 1);
       const tex = this.pixeles(mat.map);
@@ -225,33 +269,45 @@ export class QRDelModelo {
         const texel = new THREE.Color().setRGB(tex.data[i] / 255, tex.data[i + 1] / 255, tex.data[i + 2] / 255, THREE.SRGBColorSpace);
         color.multiply(texel);
       }
-      muestras.push({ p: punto, color });
+      muestras.push({ p: punto, color, luz: aOklab(color)[0] });
     }
     // Si hubo que descartar demasiados puntos, se repiten los buenos para completar las celdas.
     for (let k = 0; muestras.length && muestras.length < cantidad; k++) muestras.push(muestras[k]);
     return muestras;
   }
 
-  // Empareja cada celda del QR con un punto del modelo, conservando la cercanía en planta.
+  // Empareja cada celda del QR con un punto del modelo: los puntos más oscuros van a los módulos
+  // oscuros y los más claros a los claros; dentro de cada grupo se conserva la cercanía en planta.
   emparejar(muestras) {
-    const { cx, cz, lado } = this.datos;
+    const { cx, cz, lado, piso, centroY } = this.datos;
+    if (!muestras.length) {
+      muestras = this.celdas.map((c) => ({ p: c.destino.clone(), color: new THREE.Color(c.oscuro ? 0x111111 : 0xeeeeee), luz: c.oscuro ? 0 : 1 }));
+    }
     const indice = (x, z) => {
       const gx = Math.min(63, Math.max(0, Math.floor(((x - cx) / lado + 0.5) * 64)));
       const gz = Math.min(63, Math.max(0, Math.floor(((z - cz) / lado + 0.5) * 64)));
       return hilbert(gx, gz);
     };
-    const celdas = this.celdas.map((c, i) => [indice(c.destino.x, c.destino.z), i]).sort((a, b) => a[0] - b[0]);
-    const puntos = muestras.map((p, i) => [indice(p.p.x, p.p.z), i]).sort((a, b) => a[0] - b[0]);
-    celdas.forEach(([, i], k) => {
-      const muestra = muestras[puntos[k][1]];
-      const celda = this.celdas[i];
-      celda.origen = muestra.p;
-      celda.colorOrigen = muestra.color;
-      // Arco de vuelo: sube por encima de ambos puntos antes de caer en su celda.
-      celda.control = new THREE.Vector3().addVectors(muestra.p, celda.destino).multiplyScalar(0.5);
-      celda.control.y = Math.max(muestra.p.y, celda.destino.y) + this.datos.lado * (0.12 + celda.azar * 0.15);
-      celda.alto = (muestra.p.y - this.datos.piso) / Math.max(this.datos.centroY - this.datos.piso, 0.01);
-    });
+    const porLuz = muestras.map((_, i) => i).sort((a, b) => muestras[a].luz - muestras[b].luz);
+    const oscuras = [], claras = [];
+    this.celdas.forEach((c, i) => (c.oscuro ? oscuras : claras).push(i));
+    const repartir = (celdas, puntos) => {
+      const cs = celdas.map((i) => [indice(this.celdas[i].destino.x, this.celdas[i].destino.z), i]).sort((a, b) => a[0] - b[0]);
+      const ps = puntos.map((i) => [indice(muestras[i].p.x, muestras[i].p.z), i]).sort((a, b) => a[0] - b[0]);
+      cs.forEach(([, i], k) => {
+        const muestra = muestras[ps[k % ps.length][1]];
+        const celda = this.celdas[i];
+        celda.origen = muestra.p;
+        celda.colorOrigen = muestra.color;
+        celda.color = colorModulo(muestra.color, celda.oscuro);
+        // Arco de vuelo: sube por encima de ambos puntos antes de caer en su celda.
+        celda.control = new THREE.Vector3().addVectors(muestra.p, celda.destino).multiplyScalar(0.5);
+        celda.control.y = Math.max(muestra.p.y, celda.destino.y) + lado * (0.12 + celda.azar * 0.15);
+        celda.alto = (muestra.p.y - piso) / Math.max(centroY - piso, 0.01);
+      });
+    };
+    repartir(oscuras, porLuz.slice(0, oscuras.length));
+    repartir(claras, porLuz.slice(oscuras.length));
   }
 
   mostrarQR() { this.irA(1); }
@@ -265,6 +321,7 @@ export class QRDelModelo {
     this.objetivo = 0;
     this.modo = 0;
     if (this.cubos) this.cubos.visible = false;
+    if (this.reanudar) { this.reanudar = false; mv.play(); }
     mv.cameraControls = true;
     mv.autoRotate = this.regreso?.autoRotate ?? true;
     mv.style.transition = '';
@@ -276,6 +333,9 @@ export class QRDelModelo {
   irA(destino) {
     if (!this.datos || destino === this.objetivo || this.anim) return;
     const mv = this.mv;
+    // La animación del modelo se detiene mientras es QR: se rearma en la misma pose en que se fue.
+    if (destino === 1) this.reanudar = false;
+    if (!mv.paused) { mv.pause(); this.reanudar = true; }
     // El punto de partida (o de llegada) de cada cubo es la superficie del modelo en este momento.
     this.emparejar(this.muestrear(this.celdas.length));
     const o = mv.getCameraOrbit();
@@ -354,6 +414,7 @@ export class QRDelModelo {
           mv.autoRotate = this.regreso.autoRotate ?? true;
           mv.style.opacity = '';
           mv.style.transition = '';
+          if (this.reanudar) { this.reanudar = false; mv.play(); }
           this.renderer.clear();
         }
       }

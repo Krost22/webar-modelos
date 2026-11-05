@@ -200,7 +200,7 @@ mv.addEventListener('progress', (e) => {
 
 mv.addEventListener('load', () => {
   // Prepara el QR escondido en el modelo (las celdas bajo él, todavía invisibles).
-  suelo.configurar({ texto: urlModelo(modelo), grupo: modelo.grupo });
+  suelo.configurar({ texto: urlModelo(modelo) });
   setTimeout(() => mv.classList.remove('cambiando'), 120);
   if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.mostrarQR(), 900); }
   if (mv.availableAnimations.length) {
