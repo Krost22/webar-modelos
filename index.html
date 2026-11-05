@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/estilos.css">
+  <!-- El motor de metamorfosis (assets/metamorfosis/) importa 'three': se resuelve aquí, sin compilar. -->
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.min.js" } }</script>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
@@ -26,7 +28,7 @@
   <main class="escena">
     <div class="escenario">
       <div class="foco" aria-hidden="true"></div>
-      <!-- El QR escondido en el modelo: sus cubos se dibujan aquí (assets/qrmodelo.js). -->
+      <!-- El QR escondido en el modelo: sus cubos se dibujan aquí, encima del visor (assets/metamorfosis/). -->
       <canvas class="lienzo-qr" id="lienzoQr" aria-hidden="true"></canvas>
       <!-- Android: AR dentro de la página (WebXR). iPhone/iPad: Quick Look con assets/quicklook.js. -->
       <model-viewer id="mv" camera-controls disable-pan disable-zoom touch-action="pan-y"

@@ -1,7 +1,7 @@
 // Vitrina: un modelo a la vez, con su botón de AR, su historia narrada y una tira de miniaturas.
 import { MODELOS, GRUPOS, IDIOMAS, usdzDe, esIOS, esAndroid, enAppExterna, enlaceChrome } from './modelos.js';
 import { soportaQuickLook, precargar, abrirQuickLook } from './quicklook.js';
-import { QRDelModelo } from './qrmodelo.js';
+import { Metamorfosis, Fuentes, Adaptadores } from './metamorfosis/metamorfosis.js';
 
 const $ = (id) => document.getElementById(id);
 const mv = $('mv');
@@ -20,12 +20,10 @@ let audio = null; // estado de sonido del modelo actual
 
 /* ---------------------------------------------------------------- QR escondido en el modelo */
 // El botón QR descompone el modelo en cubos de sus colores que forman su código QR, y vuelve.
-const suelo = new QRDelModelo($('lienzoQr'), mv);
-// La cámara debe poder mirar desde arriba (vista del QR). La distancia máxima se amplía solo
-// mientras dura el QR: model-viewer calcula el plano de recorte cercano a partir de ella, y un
-// máximo enorme recortaba la parte delantera de los modelos (el Castillo).
-mv.minCameraOrbit = 'auto 0deg 0m';
-mv.maxCameraOrbit = 'auto 180deg auto';
+// Lo hace el motor de la skill «metamorfosis» (assets/metamorfosis/): muestrea el modelo tal
+// como se ve, congela su animación, sube la cámara a vista cenital solo mientras dura el QR y
+// deja el QR con la paleta del modelo, legible (corrección H, contraste OKLab).
+const suelo = new Metamorfosis({ adaptador: Adaptadores.modelViewer(mv, { lienzo: $('lienzoQr') }) });
 let qrTrasCarga = false;
 const urlModelo = (m) => new URL(`ver.html?m=${m.id}`, location.href).href;
 suelo.alCambiar = (enQR) => {
@@ -35,9 +33,9 @@ suelo.alCambiar = (enQR) => {
     ? 'Escanéalo con tu teléfono · Toca para volver'
     : 'Escanéalo con otro teléfono · Toca para volver';
 };
-$('btnQr').addEventListener('click', () => { tic(); suelo.alternar(); });
-escenario.addEventListener('click', () => { if (suelo.enQR && !suelo.anim) suelo.mostrarModelo(); });
-addEventListener('keydown', (e) => { if (e.key === 'Escape' && suelo.enQR) suelo.mostrarModelo(); });
+$('btnQr').addEventListener('click', () => { tic(); if (suelo.opc) suelo.alternar(); });
+escenario.addEventListener('click', () => { if (suelo.enDestino && !suelo.anim) suelo.ir(0); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && suelo.enDestino) suelo.ir(0); });
 
 /* ---------------------------------------------------------------- Respuesta táctil */
 let huboToque = false;
@@ -174,8 +172,8 @@ function mostrar(primera) {
   $('miniaturas').children[indice].scrollIntoView({ block: 'nearest', inline: 'center', behavior: primera ? 'auto' : 'smooth' });
 
   // Si se estaba viendo el QR, el modelo nuevo vuelve a mostrarse como QR cuando cargue.
-  qrTrasCarga = suelo.enQR;
-  if (qrTrasCarga) suelo.reiniciar();
+  qrTrasCarga = suelo.enDestino;
+  suelo.reiniciar(); // también limpia una transformación a medias
   $('btnAr').removeAttribute('data-precarga');
   $('btnAr').style.removeProperty('--avance');
 
@@ -204,9 +202,9 @@ mv.addEventListener('progress', (e) => {
 
 mv.addEventListener('load', () => {
   // Prepara el QR escondido en el modelo (las celdas bajo él, todavía invisibles).
-  suelo.configurar({ texto: urlModelo(modelo) });
+  suelo.preparar({ desde: Fuentes.modelViewer(mv), hacia: Fuentes.qr(urlModelo(modelo)) }).catch(() => {});
   setTimeout(() => mv.classList.remove('cambiando'), 120);
-  if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.mostrarQR(), 900); }
+  if (qrTrasCarga) { qrTrasCarga = false; setTimeout(() => suelo.ir(1), 900); }
   if (mv.availableAnimations.length) {
     mv.animationName = mv.availableAnimations[0];
     mv.currentTime = 0;
@@ -370,7 +368,7 @@ function abrirAr() {
   } else if (mv.canActivateAR) {
     mv.activateAR();
   } else if (esEscritorio) {
-    suelo.mostrarQR(); // en el computador, el QR de la plaza lleva el modelo al teléfono
+    suelo.ir(1); // en el computador, el QR escondido en el modelo lo lleva al teléfono
   } else if (esAndroid && !enChromeAndroid) {
     // En Chrome se abre de nuevo directo a la AR de este modelo.
     const u = new URL(location.href);

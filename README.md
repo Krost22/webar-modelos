@@ -20,14 +20,19 @@ celular. Cada modelo tiene su propio código QR que abre directamente su visor.
 narrada (ES/EN/PT cuando existe) y la música, con una tira de miniaturas para pasar al siguiente.
 La URL cambia a `index.html?m=<id>` para compartir. Los QR antiguos (`ver.html?m=<id>`) redirigen aquí.
 
-Cada modelo esconde su propio código QR (`assets/qrmodelo.js`). El botón QR descompone el modelo
-en cubos con sus colores (tomados de su geometría y sus texturas, en la pose y el giro del momento),
-los cubos vuelan a formar el QR y la cámara sube a vista cenital; el QR abre `ver.html?m=<id>`.
-El QR conserva la paleta del modelo: los módulos oscuros toman sus tonos más oscuros y los claros
-los más claros, ajustados en OKLab lo justo para que se lea. Mientras es QR la animación se detiene,
-así al tocarlo se rearma en la misma pose y orientación. Los cubos se dibujan con three.js en un lienzo propio detrás de
-`<model-viewer>`, copiando su cámara cuadro a cuadro; la geometría se lee de la escena interna de
-model-viewer 4.4, así que la AR y las animaciones siguen siendo las de model-viewer.
+Cada modelo esconde su propio código QR. El botón QR disuelve el modelo de arriba hacia abajo tras
+un borde dorado; de él nacen cubos con sus colores (tomados de su geometría y sus texturas, en la
+pose y el giro del momento), que vuelan a formar el QR mientras la cámara sube a vista cenital. El QR
+abre `ver.html?m=<id>` y conserva la paleta del modelo: los módulos oscuros toman sus tonos más
+oscuros y los claros los más claros, ajustados en OKLab lo justo para que se lea (corrección H).
+Mientras es QR la animación se detiene, así al tocarlo se rearma en la misma pose y orientación.
+
+Lo hace el motor de la skill «metamorfosis», copiado en `assets/metamorfosis/`:
+- los cubos son una sola malla instanciada que se anima en la GPU;
+- se emparejan con el QR por transporte óptimo;
+- se dibujan con three.js (resuelto con un importmap) en un lienzo encima de `<model-viewer>`, copiando su cámara cuadro a cuadro.
+
+La geometría se lee de la escena interna de model-viewer 4.4, así que la AR y las animaciones siguen siendo las de model-viewer.
 
 ## Audio y animación en AR
 
